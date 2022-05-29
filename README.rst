@@ -46,3 +46,51 @@ Run tests.
 .. code-block:: bash
 
     pytest
+
+Development
+-----------
+
+Install dev dependencies.
+
+.. code-block:: bash
+
+    pip install -r requirements_dev.txt
+
+Install for development
+
+.. code-block:: bash
+
+    pip install -e .
+
+Publish
+-------
+
+Install dev dependencies.
+
+.. code-block:: bash
+
+    pip install -r requirements_dev.txt
+
+Clean.
+
+.. code-block:: bash
+
+    git clean -xfd
+
+Build.
+
+.. code-block:: bash
+
+    python setup.py sdist bdist_wheel
+
+Verify.
+
+.. code-block:: bash
+
+    twine check dist/*
+
+Upload.
+
+.. code-block:: bash
+
+    twine upload dist/*
