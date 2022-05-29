@@ -35,9 +35,7 @@ def main(argv):
 
     # Load Configuration
     cfg = read_config(config_file)
-    log.debug(
-        f"Configuration:\n{pformat(cfg, sort_dicts=False, compact=False, indent=2)}"
-    )
+    log.debug(f"Configuration:\n{pformat(cfg, indent=2)}")
 
     # Process Input
     # Input can be one of the following:
