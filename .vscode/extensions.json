@@ -1,0 +1,12 @@
+{
+    "recommendations": [
+        "aaron-bond.better-comments",
+        "eamodio.gitlens",
+        "emeraldwalk.RunOnSave",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "PKief.material-icon-theme",
+        "timonwong.shellcheck",
+        "yzhang.markdown-all-in-one"
+    ]
+}
