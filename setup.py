@@ -9,8 +9,7 @@ DESCRIPTION = "Copyright License Manager"
 URL = "https://github.com/enovationgroup/copyright-license-manager"
 AUTHOR = "Enovation Group"
 EMAIL = "development@enovationgroup.com"
-REQUIRES_PYTHON = ">=3.6,>=3.7,>=3.8,>=3.9,>=3.10"
-VERSION = None
+REQUIRES_PYTHON = ">3.6"
 LICENSE = "MIT"
 
 cwd = os.path.abspath(os.path.dirname(__file__))
