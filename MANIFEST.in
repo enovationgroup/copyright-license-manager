@@ -1,0 +1,7 @@
+include README.rst
+include LICENSE
+include requirements.txt
+graft clmgr
+recursive-exclude * *.py[co]
+include versioneer.py
+include clmgr/__version__.py
