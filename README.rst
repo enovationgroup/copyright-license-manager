@@ -19,6 +19,12 @@ Copyright License Manager
 .. image:: https://github.com/enovationgroup/copyright-license-manager/workflows/CI/badge.svg
     :target: https://github.com/enovationgroup/copyright-license-manager/actions?query=workflow%3ACI
     :alt: GitHub Actions - CI
+.. image:: https://github.com/enovationgroup/copyright-license-manager/actions/workflows/pre-commit.yaml/badge.svg
+    :target: https://github.com/enovationgroup/copyright-license-manager/actions/workflows/pre-commit.yaml/badge.svg
+    :alt: GitHub Actions - pre-commit
+.. image:: https://img.shields.io/codecov/c/gh/enovationgroup/copyright-license-manager
+    :target: https://img.shields.io/codecov/c/gh/enovationgroup/copyright-license-manager
+    :alt: Codecov
 
 A cli tool for easy management of copyright and licenses in source code headers.
 
