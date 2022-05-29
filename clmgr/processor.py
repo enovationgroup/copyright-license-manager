@@ -28,6 +28,8 @@ def insert_copyright(cfg, path, ext, offset, args):
         char = comments.get(ext).get("char")
         line = comments.get(ext).get("line")
         end = comments.get(ext).get("end")
+        license_start = comments.get(ext).get("license").get("start")
+        license_end = comments.get(ext).get("license").get("end")
 
         # Get header
         header_detected = 0
@@ -56,7 +58,9 @@ def insert_copyright(cfg, path, ext, offset, args):
             legal_entities_idx += 1
 
         src_write.write(line + "\n")
+        src_write.write(license_start + "\n")
         src_write.write(line + " All rights reserved." + "\n")
+        src_write.write(license_end + "\n")
         src_write.write(line + "\n")
 
         if header_detected == 1:
