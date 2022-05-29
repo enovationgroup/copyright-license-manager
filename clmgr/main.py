@@ -25,8 +25,11 @@ class ContinueIgnore(Exception):
     pass
 
 
-def main():
-    args = parse_args(sys.argv[1:])
+def main(argv):
+    if argv is not None:
+        args = parse_args(argv)
+    else:
+        args = parse_args(sys.argv[1:])
 
     handle_version(args)
     handle_debug(args, log)
