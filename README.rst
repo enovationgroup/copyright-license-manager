@@ -28,3 +28,21 @@ Installation
 .. code-block:: bash
 
     pip install clmgr
+
+Testing
+-------
+
+This project uses ``pytest`` to run tests, if docstring examples are provided or
+included these will be included automatically.
+
+Install test dependencies.
+
+.. code-block:: bash
+
+    pip install -r requirements_dev.txt
+
+Run tests.
+
+.. code-block:: bash
+
+    pytest
