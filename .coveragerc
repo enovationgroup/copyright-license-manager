@@ -3,4 +3,3 @@ omit =
     setup.py
     versioneer.py
     clmgr/__version__.py
-    clmgr/tests/test*
