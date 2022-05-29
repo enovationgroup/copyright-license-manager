@@ -50,6 +50,10 @@ Run tests.
 Development
 -----------
 
+This project uses ``black`` to format code and ``flake8`` for linting. To ensure
+these actions are run ``pre-commit`` is used. A git alias is provided which
+will configure the entire environment.
+
 Configure environment.
 
 .. code-block:: bash
