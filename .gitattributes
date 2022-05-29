@@ -1,5 +1,6 @@
 clmgr/__version__.py export-subst
 
 *               text    eol=lf
+*.py            text    eol=lf
 # Force LF for test files because of compare
 clmgr/tests/**  text    eol=lf
