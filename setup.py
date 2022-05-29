@@ -1,8 +1,7 @@
 import io
 import os
 import versioneer
-from xml.etree.ElementTree import VERSION
-from setuptools import find_packages, setup, Command
+from setuptools import setup
 
 # Package meta-data
 NAME = "clmgr"

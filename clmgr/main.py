@@ -1,10 +1,7 @@
-import logging
 import sys
-import yaml
 
 from pathlib import Path
 from pprint import pformat
-from clmgr.__version__ import get_versions
 
 from clmgr.args import (
     handle_config_file,

@@ -1,4 +1,4 @@
-'''Utilities for parsing and handling commandline arguments'''
+"""Utilities for parsing and handling commandline arguments"""
 import argparse
 import logging
 from pathlib import Path
@@ -13,7 +13,7 @@ log = logging.getLogger("root")
 
 def parse_args(args):
     # Create argument parser
-    formatter_class = lambda prog: argparse.HelpFormatter(
+    formatter_class = lambda prog: argparse.HelpFormatter(  # noqa: E731
         prog, max_help_position=100, width=200
     )
     parser = argparse.ArgumentParser(
@@ -50,7 +50,7 @@ def parse_args(args):
 
 
 def handle_version(args):
-    '''Print the version number if --version argument is provided on commandline
+    """Print the version number if --version argument is provided on commandline
 
     Parameters
     ----------
@@ -61,20 +61,20 @@ def handle_version(args):
     -------
         None
 
-    '''
+    """
     if args.version:
         print(get_versions()["version"])
         sys.exit()
 
 
 def handle_debug(args, logger):
-    '''Handle --debug commandline option
+    """Handle --debug commandline option
 
     Parameters
     ----------
     args
         Parsed commandline arguments
-    '''
+    """
     if args.debug:
         log_level = logging.DEBUG
     else:

@@ -1,4 +1,4 @@
-'''Log functions'''
+"""Log functions"""
 import logging
 
 

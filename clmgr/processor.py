@@ -1,4 +1,4 @@
-'''Processor functions'''
+"""Processor functions"""
 
 import datetime
 import os
@@ -154,7 +154,7 @@ def update_copyright(cfg, path, ext, offset, args):
         license_detected = 0
         license_start_idx = 0
         license_end_idx = 0
-        license_block = []
+        license_block = []  # noqa: F841
         # Search for the start of the License with the search region
         # If found record index
         # Search again for end region, this can be larger then the initial
@@ -162,8 +162,8 @@ def update_copyright(cfg, path, ext, offset, args):
         # for the license termination marker
         for x in range(len(lines)):
             if license_start in lines[x] and x <= args.region:
-                license_detected = 1 # We found a license block
-                license_start_idx = x # Record the start index
+                license_detected = 1  # We found a license block
+                license_start_idx = x  # Record the start index
 
         for x in range(len(lines)):
             if license_end in lines[x] and x > license_start_idx:
@@ -171,7 +171,7 @@ def update_copyright(cfg, path, ext, offset, args):
 
         if license_detected == 1:
             # TODO: Process license further if required
-            license_block = lines[license_start_idx:license_end_idx]
+            license_block = lines[license_start_idx:license_end_idx]  # noqa: F841
         else:
             lines.insert(idx + 1, line + "\n")
             lines.insert(idx + 2, license_start + "\n")

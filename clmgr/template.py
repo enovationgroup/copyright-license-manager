@@ -1,4 +1,4 @@
-'''Template functions'''
+"""Template functions"""
 
 comments = {
     "java": {
@@ -6,10 +6,7 @@ comments = {
         "char": "*",
         "line": " *",
         "end": " */",
-        "license": {
-            "start": " * ---",
-            "end": " * ---"
-        }
+        "license": {"start": " * ---", "end": " * ---"},
     },
     "sh": {
         "start": "###############################################################################",
