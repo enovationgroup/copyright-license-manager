@@ -50,6 +50,12 @@ Run tests.
 Development
 -----------
 
+Configure environment.
+
+.. code-block:: bash
+
+    git config include.path ../.gitaliases
+
 Install dev dependencies.
 
 .. code-block:: bash
