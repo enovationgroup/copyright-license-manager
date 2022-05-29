@@ -79,8 +79,10 @@ Install for development
 
     pip install -e .
 
-Publish
--------
+Release (Manual)
+----------------
+
+The following action describe the manual release process.
 
 Install dev dependencies.
 
@@ -111,3 +113,20 @@ Upload.
 .. code-block:: bash
 
     twine upload dist/*
+
+Release (GitHub)
+----------------
+
+Releases are published automatically when a tag is pushed to GitHub.
+
+.. code-block:: bash
+
+    # Set next version number
+    export RELEASE=x.x.x
+
+    # Create tags
+    git commit --allow-empty -m "build: release ${RELEASE}"
+    git tag -a ${RELEASE} -m "build: release ${RELEASE}"
+
+    # Push - Assume that we are working from a fork
+    git push upstream --tags
