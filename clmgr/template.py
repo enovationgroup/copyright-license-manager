@@ -1,3 +1,5 @@
+'''Template functions'''
+
 comments = {
     "java": {"start": "/*", "char": "*", "line": " *", "end": " */"},
     "sh": {

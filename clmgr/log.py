@@ -1,3 +1,4 @@
+'''Log functions'''
 import logging
 
 
