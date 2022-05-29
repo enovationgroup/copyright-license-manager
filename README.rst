@@ -55,6 +55,7 @@ Configure environment.
 .. code-block:: bash
 
     git config include.path ../.gitaliases
+    git setup
 
 Install dev dependencies.
 

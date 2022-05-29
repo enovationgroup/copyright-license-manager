@@ -2,3 +2,4 @@
     clear = "clean -xfd"
     test = "! pytest"
     test-reset = "restore clmgr/tests/input/*"
+    setup = "! pip install -r requirements_dev.txt; pre-commit install"
