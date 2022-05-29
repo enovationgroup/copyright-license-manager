@@ -1,2 +1,4 @@
 [alias]
     clear = "clean -xfd"
+    test = "! pytest"
+    test-reset = "restore clmgr/tests/input/*"
