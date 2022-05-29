@@ -17,7 +17,7 @@ Copyright License Manager
     :target: https://pypi.org/project/clmgr/
     :alt: PyPI - License
 .. image:: https://github.com/enovationgroup/copyright-license-manager/workflows/CI/badge.svg
-    :target: https://github.com/enovationgroup/copyright-license-manager/actions?query=workflow%3ACI
+    :target: https://github.com/enovationgroup/copyright-license-manager/actions/workflows/ci.yaml/badge.svg
     :alt: GitHub Actions - CI
 .. image:: https://github.com/enovationgroup/copyright-license-manager/actions/workflows/pre-commit.yaml/badge.svg
     :target: https://github.com/enovationgroup/copyright-license-manager/actions/workflows/pre-commit.yaml/badge.svg
