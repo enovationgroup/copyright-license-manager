@@ -1,0 +1,15 @@
+source:
+  - java
+exclude:
+  - "*/nl/enovationgroup/copyright/test/*"
+  - Comments
+  - Multiple.java
+  - Multiple*
+  - Remove.*
+  - Single
+  - SingleUpdate
+legal:
+  - inception: 2015
+    name: Enovation Group B.V.
+    locality: Capelle aan den IJssel
+    country: NL
