@@ -148,15 +148,35 @@ def update_copyright(cfg, path, ext, offset, args):
             lines.insert(lid + 2, line + " " + tmpl + "\n")
             idx = lid + 2
 
-        # Check for license
-        license_block = 0
+        # Detect license block
+        license_start = comments.get(ext).get("license").get("start")
+        license_end = comments.get(ext).get("license").get("end")
+        license_detected = 0
+        license_start_idx = 0
+        license_end_idx = 0
+        license_block = []
+        # Search for the start of the License with the search region
+        # If found record index
+        # Search again for end region, this can be larger then the initial
+        # search region therefor to not include the search region when searching
+        # for the license termination marker
         for x in range(len(lines)):
-            if "All rights reserved" in lines[x] and x <= args.region:
-                license_block = 1
+            if license_start in lines[x] and x <= args.region:
+                license_detected = 1 # We found a license block
+                license_start_idx = x # Record the start index
 
-        if license_block == 0:
+        for x in range(len(lines)):
+            if license_end in lines[x] and x > license_start_idx:
+                license_end_idx = x
+
+        if license_detected == 1:
+            # TODO: Process license further if required
+            license_block = lines[license_start_idx:license_end_idx]
+        else:
             lines.insert(idx + 1, line + "\n")
-            lines.insert(idx + 2, line + " All rights reserved." + "\n")
+            lines.insert(idx + 2, license_start + "\n")
+            lines.insert(idx + 3, line + " All rights reserved." + "\n")
+            lines.insert(idx + 4, license_end + "\n")
 
         # Writes all lines to new file
         src_write.writelines(lines)
