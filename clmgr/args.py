@@ -13,9 +13,11 @@ log = logging.getLogger("root")
 
 def parse_args(args):
     # Create argument parser
-    formatter_class = lambda prog: argparse.HelpFormatter(  # noqa: E731
-        prog, max_help_position=100, width=200
-    )
+    def formatter_class(prog):
+        return argparse.HelpFormatter(  # noqa: E731
+            prog, max_help_position=100, width=200
+        )
+
     parser = argparse.ArgumentParser(
         prog="copyrightmgr", formatter_class=formatter_class
     )
