@@ -114,8 +114,8 @@ Upload.
 
     twine upload dist/*
 
-Release (GitHub)
-----------------
+Release
+-------
 
 Releases are published automatically when a tag is pushed to GitHub.
 
