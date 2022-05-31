@@ -71,15 +71,16 @@ def main(args=sys.argv[1:]):
             except ContinueIgnore:
                 continue
 
-            log.debug(f"Processing file: {p}")
+        for file in file_list:
+            log.debug(f"Processing file: {file}")
 
             # Read source and close it
-            src = open(p.absolute())
+            src = open(file=file.absolute(), encoding="utf-8", mode="r")
             lines = src.readlines()
             src.close()
 
             # Process file
-            res = process_lines(cfg, p, ext, lines, args)
+            res = process_lines(cfg, file, ext, lines, args)
             add += res[0]
             upd += res[1]
 

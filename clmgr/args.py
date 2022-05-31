@@ -104,5 +104,5 @@ def handle_input_dir(args):
 
 def read_config(config_file):
     log.debug(f"Reading configuration from: {config_file}")
-    with open(config_file) as file:
+    with open(file=config_file, encoding="utf-8", mode="r") as file:
         return yaml.load(file, Loader=yaml.FullLoader)

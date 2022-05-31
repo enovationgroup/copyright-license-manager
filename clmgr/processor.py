@@ -11,7 +11,9 @@ def insert_copyright(cfg, path, ext, offset, args):
     backup_file = str(path.absolute()) + ".bak"
 
     # Open source in read_only and backup in write mode
-    with open(path.absolute(), "r") as src_read, open(backup_file, "w") as src_write:
+    with open(file=path.absolute(), encoding="utf-8", mode="r") as src_read, open(
+        file=backup_file, encoding="utf-8", mode="w"
+    ) as src_write:
         # Read lines from source and close it
         lines = src_read.readlines()
         src_read.close()
@@ -95,7 +97,9 @@ def update_copyright(cfg, path, ext, offset, args):
     backup_file = str(path.absolute()) + ".bak"
 
     # Open source in read_only and backup in write mode
-    with open(path.absolute(), "r") as src_read, open(backup_file, "w") as src_write:
+    with open(file=path.absolute(), encoding="utf-8", mode="r") as src_read, open(
+        file=backup_file, encoding="utf-8", mode="w"
+    ) as src_write:
         # Read lines from source and close it
         lines = src_read.readlines()
         src_read.close()
