@@ -1,3 +1,6 @@
+from fnmatch import fnmatch, translate
+import os
+import re
 import sys
 
 from pathlib import Path
@@ -43,33 +46,38 @@ def main(args=sys.argv[1:]):
     add = 0
     upd = 0
 
-    for ext in cfg["source"]:
-        # Find all files for provided source extension
-        file_list = []
-        continue_ignore = ContinueIgnore()
+    if "include" not in cfg.keys() or cfg["include"] is None:
+        cfg["include"] = []
+    if "exclude" not in cfg.keys() or cfg["exclude"] is None:
+        cfg["exclude"] = []
 
+    includes = r"|".join([translate(i) for i in cfg["include"]])
+    excludes = r"|".join([translate(e) for e in cfg["exclude"]]) or r"$."
+    file_list = []
+
+    for ext in cfg["source"]:
         if args.file is not None:
             path = Path(args.file)
             if path.suffix.lower()[1:] == ext:
                 file_list.append(path)
         else:
-            file_list = Path(input_dir).rglob(f"*.{ext}")
+            for root, dirs, files in os.walk(input_dir, topdown=True):
+                # exclude dirs based on directory name only
+                dirs[:] = [d for d in dirs if not re.match(excludes, d)]
+                # convert dirs to full path
+                dirs[:] = [os.path.join(root, d) for d in dirs]
+                # exclude directories on full path
+                dirs[:] = [d for d in dirs if not re.match(excludes, d)]
 
-        for p in file_list:
-            try:
-                if "exclude" in cfg:
-                    for exclude in cfg["exclude"]:
-                        if p.stem == exclude:
-                            log.debug(f"Excluding file {p}; match: {exclude}")
-                            raise continue_ignore
-                        if p.name == exclude:
-                            log.debug(f"Excluding file {p}; match: {exclude}")
-                            raise continue_ignore
-                        if p.match(exclude):
-                            log.debug(f"Excluding file {p}; match: {exclude}")
-                            raise continue_ignore
-            except ContinueIgnore:
-                continue
+                # exclude/include files
+                files[:] = [f for f in files if fnmatch(f, "*." + ext)]
+                files[:] = [os.path.join(root, f) for f in files]
+                files[:] = [f for f in files if Path(f).stem not in excludes]
+                files[:] = [f for f in files if Path(f).name not in excludes]
+                files[:] = [f for f in files if not re.match(excludes, f)]
+                files[:] = [f for f in files if re.match(includes, f)]
+                for file in files:
+                    file_list.append(Path(root, file))
 
         for file in file_list:
             log.debug(f"Processing file: {file}")
