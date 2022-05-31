@@ -1,3 +1,4 @@
+import sys
 from clmgr.main import main
 
-main()
+main(args=sys.argv[1:])
