@@ -58,8 +58,8 @@ def insert_copyright(cfg, path, ext, offset, args):
             src_write.write(line + " " + tmpl + "\n")
             legal_entities_idx += 1
 
+        src_write.write(line + "\n")
         if cfg["license"]["enabled"]:
-            src_write.write(line + "\n")
             src_write.write(license_start + "\n")
             if cfg["license"]["external"] is False:
                 src_write.write(line + " " + cfg["license"]["content"] + "\n")
