@@ -1,6 +1,5 @@
 package nl.enovationgroup.copyright.test;
-/***********************************************************************************************************************
- *
+/*
  * Copyright (c) 2015 - 2022 [Enovation Group B.V. - Capelle aan den IJssel - NL]
  *
  * ---

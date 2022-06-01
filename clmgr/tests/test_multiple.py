@@ -16,8 +16,6 @@ def test_multiple_java():
         test_dir + "/config/multiple.yml",
         "--file",
         test_dir + "/input/java/Multiple.java",
-        "--header-length",
-        "120",
     ]
 
     main(test_args)

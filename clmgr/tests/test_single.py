@@ -15,8 +15,6 @@ def test_single_java():
         test_dir + "/config/single.yml",
         "--file",
         test_dir + "/input/java/Single.java",
-        "--header-length",
-        "120",
     ]
 
     # Run clmgr

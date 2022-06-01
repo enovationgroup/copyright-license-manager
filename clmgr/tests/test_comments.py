@@ -15,8 +15,6 @@ def test_comments_java():
         test_dir + "/config/comments.yml",
         "--file",
         test_dir + "/input/java/Comments.java",
-        "--header-length",
-        "120",
     ]
 
     # Run clmgr

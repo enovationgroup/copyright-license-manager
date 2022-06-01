@@ -16,8 +16,6 @@ def test_multiple_update_java():
         test_dir + "/config/multiple.update.yml",
         "--file",
         test_dir + "/input/java/MultipleUpdate.java",
-        "--header-length",
-        "120",
     ]
 
     main(test_args)

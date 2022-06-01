@@ -39,8 +39,7 @@ def insert_copyright(cfg, path, ext, offset, args):
             lines = lines[1:]
             header_detected = 1
 
-        src_write.write(start + char * (int(args.header_length) - len(start)) + "\n")
-        src_write.write(line + "\n")
+        src_write.write(start + "\n")
         legal_entities = cfg["legal"]
         legal_entities_idx = 0
         for legal in legal_entities:
@@ -72,9 +71,9 @@ def insert_copyright(cfg, path, ext, offset, args):
                     lines[x].startswith(start) or lines[x].startswith(char)
                 ) and not lines[x].startswith(end):
                     if lines[x].startswith(start):
-                        src_write(lines[x])
+                        src_write.write(lines[x])
                     elif lines[x].startswith(char):
-                        src_write(start + lines[x].lstrip(start))
+                        src_write.write(start + lines[x].lstrip(start))
                     comment_lines += 1
 
             # Remove written user comment lines from source
@@ -113,22 +112,19 @@ def update_copyright(cfg, path, ext, offset, args):
         lines = lines[offset:]
 
         start = comments.get(ext).get("start")
-        char = comments.get(ext).get("char")
 
         # Get header
         if lines[0].startswith(start):
             lines = lines[1:]
-            lines.insert(
-                0, start + char * (int(args.header_length) - len(start)) + "\n"
-            )
+            lines.insert(0, start + "\n")
 
         # Get Copyright block
-        # This block contains only the copyrightmgr lines
+        # This block contains only the copyright lines
         copyright_block = []
         for x in range(len(lines)):
             if "Copyright" in lines[x] and x <= args.region:
                 copyright_block.append(lines[x])
-        # Remove the copyrightmgr block lines from the source code
+        # Remove the copyright block lines from the source code
         for y in copyright_block:
             lines.remove(y)
 
@@ -149,8 +145,8 @@ def update_copyright(cfg, path, ext, offset, args):
                 legal["locality"],
                 legal["country"],
             )
-            lines.insert(lid + 2, line + " " + tmpl + "\n")
-            idx = lid + 2
+            lines.insert(lid + 1, line + " " + tmpl + "\n")
+            idx = lid + 1
 
         # Detect license block
         license_start = comments.get(ext).get("license").get("start")
@@ -204,7 +200,6 @@ def process_lines(cfg, path, ext, lines, args):
         # the first copy right line will always be on line 4
         # the offset will be 1 (the package line)
         if ext.lower() == "java":
-            copyright_start = 4
             offset = 1
 
         # Shell

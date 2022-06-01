@@ -1,5 +1,5 @@
 package nl.enovationgroup.copyright.test;
-/***********************************************************************************************************************
+/*
  * Additional comment lines which should remain intact
  * This line should also remain intact
  */

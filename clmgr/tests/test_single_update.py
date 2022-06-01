@@ -15,8 +15,6 @@ def test_single_update_java():
         test_dir + "/config/single.update.yml",
         "--file",
         test_dir + "/input/java/SingleUpdate.java",
-        "--header-length",
-        "120",
     ]
 
     # Run clmgr

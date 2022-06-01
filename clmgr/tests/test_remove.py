@@ -15,8 +15,6 @@ def test_remove_java():
         test_dir + "/config/remove.yml",
         "--file",
         test_dir + "/input/java/Remove.java",
-        "--header-length",
-        "120",
     ]
 
     # Run clmgr

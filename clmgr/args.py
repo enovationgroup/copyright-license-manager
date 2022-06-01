@@ -38,12 +38,6 @@ def parse_args(args):
         default=10,
         metavar="REGION",
     )
-    parser.add_argument(
-        "--header-length",
-        help="Header length; default=80",
-        default=80,
-        metavar="HEADER_LENGTH",
-    )
     parser.add_argument("--debug", help="Verbose logging", action="store_true")
     parser.add_argument("--version", help="Show version", action="store_true")
 
