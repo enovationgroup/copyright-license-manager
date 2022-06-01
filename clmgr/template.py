@@ -16,6 +16,8 @@ comments = {
     },
 }
 
+licenses = {"default": "All rights reserved."}
+
 
 def template(inception, year, name, locality, country):
     return eval(

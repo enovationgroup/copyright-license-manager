@@ -16,6 +16,7 @@ from clmgr.args import (
 )
 from clmgr.log import setup_custom_logger
 from clmgr.processor import process_lines
+from clmgr.template import licenses
 
 
 log = setup_custom_logger("root")
@@ -35,6 +36,16 @@ def main(args=sys.argv[1:]):
 
     # Load Configuration
     cfg = read_config(config_file)
+    if "include" not in cfg.keys() or cfg["include"] is None:
+        cfg["include"] = []
+    if "exclude" not in cfg.keys() or cfg["exclude"] is None:
+        cfg["exclude"] = []
+    if "license" not in cfg.keys() or cfg["license"] is None:
+        cfg["license"]["enabled"] = False
+    if "external" not in cfg["license"].keys() or cfg["license"]["external"] is None:
+        cfg["license"]["external"] = False
+    if "content" not in cfg["license"].keys() or cfg["license"]["content"] is None:
+        cfg["license"]["content"] = licenses.get("default")
     log.debug(f"Configuration:\n{pformat(cfg, indent=2)}")
 
     # Process Input
@@ -45,11 +56,6 @@ def main(args=sys.argv[1:]):
     # the current working directory or through the flag -c, --config
     add = 0
     upd = 0
-
-    if "include" not in cfg.keys() or cfg["include"] is None:
-        cfg["include"] = []
-    if "exclude" not in cfg.keys() or cfg["exclude"] is None:
-        cfg["exclude"] = []
 
     includes = r"|".join([translate(i) for i in cfg["include"]])
     excludes = r"|".join([translate(e) for e in cfg["exclude"]]) or r"$."
