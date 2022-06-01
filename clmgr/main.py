@@ -42,10 +42,14 @@ def main(args=sys.argv[1:]):
         cfg["exclude"] = []
     if "license" not in cfg.keys() or cfg["license"] is None:
         cfg["license"]["enabled"] = False
-    if "external" not in cfg["license"].keys() or cfg["license"]["external"] is None:
-        cfg["license"]["external"] = False
-    if "content" not in cfg["license"].keys() or cfg["license"]["content"] is None:
-        cfg["license"]["content"] = licenses.get("default")
+    if cfg["license"]["enabled"]:
+        if (
+            "external" not in cfg["license"].keys()
+            or cfg["license"]["external"] is None
+        ):
+            cfg["license"]["external"] = False
+        if "content" not in cfg["license"].keys() or cfg["license"]["content"] is None:
+            cfg["license"]["content"] = licenses.get("default")
     log.debug(f"Configuration:\n{pformat(cfg, indent=2)}")
 
     # Process Input
