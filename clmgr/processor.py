@@ -30,6 +30,7 @@ def insert_copyright(cfg, path, ext, offset, args):
         char = comments.get(ext).get("char")
         line = comments.get(ext).get("line")
         end = comments.get(ext).get("end")
+        divider = comments.get(ext).get("divider")
         license_start = comments.get(ext).get("license").get("start")
         license_end = comments.get(ext).get("license").get("end")
 
@@ -55,17 +56,21 @@ def insert_copyright(cfg, path, ext, offset, args):
                 legal["locality"],
                 legal["country"],
             )
-            src_write.write(line + " " + tmpl + "\n")
+            src_write.write(line + tmpl + "\n")
             legal_entities_idx += 1
 
-        src_write.write(line + "\n")
+        if divider:
+            src_write.write(line.rstrip() + "\n")
         if cfg["license"]["enabled"]:
-            src_write.write(license_start + "\n")
+            if license_start != "":
+                src_write.write(line + license_start + "\n")
             if cfg["license"]["external"] is False:
-                src_write.write(line + " " + cfg["license"]["content"] + "\n")
+                src_write.write(line + cfg["license"]["content"] + "\n")
             # TODO: Read license file
-            src_write.write(license_end + "\n")
-            src_write.write(line + "\n")
+            if license_end != "":
+                src_write.write(line + license_end + "\n")
+            if divider:
+                src_write.write(line.rstrip() + "\n")
 
         if header_detected == 1:
             comment_lines = 0
@@ -102,6 +107,10 @@ def update_copyright(cfg, path, ext, offset, args):
     with open(file=path.absolute(), encoding="utf-8", mode="r") as src_read, open(
         file=backup_file, encoding="utf-8", mode="w"
     ) as src_write:
+        start = comments.get(ext).get("start")
+        line = comments.get(ext).get("line")
+        divider = comments.get(ext).get("divider")
+
         # Read lines from source and close it
         lines = src_read.readlines()
         src_read.close()
@@ -113,8 +122,6 @@ def update_copyright(cfg, path, ext, offset, args):
 
         # Now strip the written offset lines from the source
         lines = lines[offset:]
-
-        start = comments.get(ext).get("start")
 
         # Get header
         if lines[0].startswith(start):
@@ -131,11 +138,11 @@ def update_copyright(cfg, path, ext, offset, args):
         for y in copyright_block:
             lines.remove(y)
 
-        line = comments.get(ext).get("line")
         legal_entities = cfg["legal"]
         idx = 0
         for lid in range(len(legal_entities)):
             legal = legal_entities[lid]
+            print(legal)
             year = datetime.datetime.now().year
 
             if lid < len(legal_entities) - 1:
@@ -148,41 +155,44 @@ def update_copyright(cfg, path, ext, offset, args):
                 legal["locality"],
                 legal["country"],
             )
-            lines.insert(lid + 1, line + " " + tmpl + "\n")
+            lines.insert(lid + 1, line + tmpl + "\n")
             idx = lid + 1
 
         # Detect license block
         if cfg["license"]["enabled"]:
             license_start = comments.get(ext).get("license").get("start")
             license_end = comments.get(ext).get("license").get("end")
-            license_detected = 0
+            license_detected = False
             license_start_idx = 0
             license_end_idx = 0
             license_block = []  # noqa: F841
             # Search for the start of the License with the search region
             # If found record index
-            # Search again for end region, this can be larger then the initial
+            # Search again for end region, this can be larger than the initial
             # search region therefor to not include the search region when searching
             # for the license termination marker
             for x in range(len(lines)):
                 if license_start in lines[x] and x <= args.region:
-                    license_detected = 1  # We found a license block
+                    license_detected = True  # We found a license block
                     license_start_idx = x  # Record the start index
 
             for x in range(len(lines)):
                 if license_end in lines[x] and x > license_start_idx:
                     license_end_idx = x
 
-            if license_detected == 1:
+            if license_detected:
                 # TODO: Process license further if required
                 license_block = lines[license_start_idx:license_end_idx]  # noqa: F841
             else:
-                lines.insert(idx + 1, line + "\n")
-                lines.insert(idx + 2, license_start + "\n")
+                insert_idx = idx + 1
+                if divider:
+                    lines.insert(insert_idx, line.rstrip() + "\n")
+                    insert_idx += 1
+                lines.insert(insert_idx, line + license_start + "\n")
                 if cfg["license"]["external"] is False:
-                    lines.insert(idx + 3, line + " " + cfg["license"]["content"] + "\n")
+                    lines.insert(insert_idx + 1, line + cfg["license"]["content"] + "\n")
                 # TODO: Read license file
-                lines.insert(idx + 4, license_end + "\n")
+                lines.insert(insert_idx + 2, line + license_end + "\n")
 
         # Writes all lines to new file
         src_write.writelines(lines)
@@ -201,15 +211,19 @@ def process_lines(cfg, path, ext, lines, args):
 
     try:
         # Java
-        # The file should ALWAYS start with the package name
-        # This will automatically mean that with the comment seperation lines
-        # the first copy right line will always be on line 4
-        # the offset will be 1 (the package line)
+        # The file should ALWAYS start with the package name.
+        # This will automatically mean that with the comment separation lines
+        # the first copyright line will always be on line 3
+        # and the offset will be 1 (the package line).
         if ext.lower() == "java":
             offset = 1
 
+        # Typescript
+        if ext.lower() == "ts":
+            copyright_start = 2
+            offset = 0
+
         # Shell
-        # The first line of
         # TODO: Implementation
         if ext.lower() == "sh":
             copyright_start = 4

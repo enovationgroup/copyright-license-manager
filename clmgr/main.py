@@ -63,9 +63,9 @@ def main(args=sys.argv[1:]):
 
     includes = r"|".join([translate(i) for i in cfg["include"]])
     excludes = r"|".join([translate(e) for e in cfg["exclude"]]) or r"$."
-    file_list = []
 
     for ext in cfg["source"]:
+        file_list = []
         if args.file is not None:
             path = Path(args.file)
             if path.suffix.lower()[1:] == ext:
@@ -90,7 +90,7 @@ def main(args=sys.argv[1:]):
                     file_list.append(Path(root, file))
 
         for file in file_list:
-            log.debug(f"Processing file: {file}")
+            log.info(f"Processing file: {file}")
 
             # Read source and close it
             src = open(file=file.absolute(), encoding="utf-8", mode="r")

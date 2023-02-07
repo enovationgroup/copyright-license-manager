@@ -1,27 +1,7 @@
-import filecmp
-import os
-
-
-from clmgr.main import main
-
-test_dir = os.path.dirname(os.path.realpath(__file__))
-
+from clmgr.tests.test_base import run_test_config
 
 def test_multiple_java():
-    global test_dir
+    run_test_config("java/", "Multiple.java", "multiple.yml")
 
-    # Test arguments
-    test_args = [
-        "-c",
-        test_dir + "/config/multiple.yml",
-        "--file",
-        test_dir + "/input/java/Multiple.java",
-    ]
-
-    main(test_args)
-
-    assert filecmp.cmp(
-        test_dir + "/input/java/Multiple.java",
-        test_dir + "/output/java/Multiple.java",
-        shallow=False,
-    )
+def test_multiple_typescript():
+    run_test_config("ts/", "multiple.component.ts", "multiple.yml")

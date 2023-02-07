@@ -1,6 +1,7 @@
 ---
 source:
   - java
+  - ts
 legal:
   - inception: 2014
     name: Mars Hospital
