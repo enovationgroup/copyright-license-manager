@@ -190,7 +190,9 @@ def update_copyright(cfg, path, ext, offset, args):
                     insert_idx += 1
                 lines.insert(insert_idx, line + license_start + "\n")
                 if cfg["license"]["external"] is False:
-                    lines.insert(insert_idx + 1, line + cfg["license"]["content"] + "\n")
+                    lines.insert(
+                        insert_idx + 1, line + cfg["license"]["content"] + "\n"
+                    )
                 # TODO: Read license file
                 lines.insert(insert_idx + 2, line + license_end + "\n")
 

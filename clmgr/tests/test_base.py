@@ -6,15 +6,17 @@ from clmgr.main import main
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 
+
 def run_test_config(directory, filename, config):
     test_args = [
         "-c",
         test_dir + "/config/" + config,
         "--file",
         test_dir + "/temp/" + directory + filename,
-        ]
+    ]
 
     run_test(directory, filename, test_args)
+
 
 def run_test(directory, filename, test_args):
     global test_dir
@@ -36,4 +38,4 @@ def run_test(directory, filename, test_args):
         temp_file,
         output_file,
         shallow=False,
-        )
+    )
