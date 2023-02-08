@@ -1,6 +1,6 @@
 package nl.enovationgroup.copyright.test;
 /*
- * Copyright (c) 2017 - 2022 [Enovation B.V. - Capelle aan den IJssel - NL]
+ * Copyright (c) 2017 - 2023 [Enovation B.V. - Capelle aan den IJssel - NL]
  *
  * ---
  * All rights reserved.
