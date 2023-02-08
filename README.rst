@@ -79,6 +79,12 @@ Install for development
 
     pip install -e .
 
+Format Code
+
+.. code-block:: bash
+
+    python -m black clmgr/**
+
 Release (Manual)
 ----------------
 
