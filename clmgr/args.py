@@ -19,7 +19,7 @@ def parse_args(args):
         )
 
     parser = argparse.ArgumentParser(
-        prog="copyrightmgr", formatter_class=formatter_class
+        prog="clmgr", formatter_class=formatter_class
     )
 
     # Configure commandline options
