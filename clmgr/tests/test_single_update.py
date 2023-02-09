@@ -5,5 +5,9 @@ def test_single_update_java():
     run_test_config("java/", "SingleUpdate.java", "single.update.yml")
 
 
+def test_single_update_python():
+    run_test_config("py/", "single_update.py_", "single.update.yml")
+
+
 def test_single_update_typescript():
     run_test_config("ts/", "single-update.component.ts", "single.update.yml")

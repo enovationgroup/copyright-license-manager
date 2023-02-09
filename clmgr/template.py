@@ -17,6 +17,22 @@ comments = {
         "divider": False,
         "license": {"start": "---", "end": "---"},
     },
+    "cs": {
+        "start": "/*************************************************************************",
+        "char": "*",
+        "line": " * ",
+        "end": " */",
+        "divider": True,
+        "license": {"start": "---", "end": "---"},
+    },
+    "py_": {
+        "start": "#",
+        "char": "#",
+        "line": "# ",
+        "end": "#",
+        "divider": False,
+        "license": {"start": "---", "end": "---"},
+    },
     "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
 }
 

@@ -1,5 +1,8 @@
 source:
   - java
+  - ts
+  - cs
+  - py_
 legal:
   - inception: 2015
     name: Enovation Group B.V.
@@ -12,6 +15,7 @@ license:
 include:
 exclude:
   - "*/nl/enovationgroup/copyright/test/*"
+  - "*/Enovation/Copyright/Test/*"
   - Comments
   - Multiple.java
   - Multiple*
