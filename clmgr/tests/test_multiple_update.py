@@ -1,27 +1,9 @@
-import filecmp
-import os
-
-
-from clmgr.main import main
-
-test_dir = os.path.dirname(os.path.realpath(__file__))
+from clmgr.tests.test_base import run_test_config
 
 
 def test_multiple_update_java():
-    global test_dir
+    run_test_config("java/", "MultipleUpdate.java", "multiple.update.yml")
 
-    # Test arguments
-    test_args = [
-        "-c",
-        test_dir + "/config/multiple.update.yml",
-        "--file",
-        test_dir + "/input/java/MultipleUpdate.java",
-    ]
 
-    main(test_args)
-
-    assert filecmp.cmp(
-        test_dir + "/input/java/MultipleUpdate.java",
-        test_dir + "/output/java/MultipleUpdate.java",
-        shallow=False,
-    )
+def test_multiple_update_typsecript():
+    run_test_config("ts/", "multiple-update.component.ts", "multiple.update.yml")

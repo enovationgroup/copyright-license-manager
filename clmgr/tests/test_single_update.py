@@ -1,28 +1,9 @@
-import filecmp
-import os
-
-
-from clmgr.main import main
-
-test_dir = os.path.dirname(os.path.realpath(__file__))
+from clmgr.tests.test_base import run_test_config
 
 
 def test_single_update_java():
-    global test_dir
+    run_test_config("java/", "SingleUpdate.java", "single.update.yml")
 
-    test_args = [
-        "-c",
-        test_dir + "/config/single.update.yml",
-        "--file",
-        test_dir + "/input/java/SingleUpdate.java",
-    ]
 
-    # Run clmgr
-    main(test_args)
-
-    # Verify result
-    assert filecmp.cmp(
-        test_dir + "/input/java/SingleUpdate.java",
-        test_dir + "/output/java/SingleUpdate.java",
-        shallow=False,
-    )
+def test_single_update_typescript():
+    run_test_config("ts/", "single-update.component.ts", "single.update.yml")

@@ -1,28 +1,9 @@
-import filecmp
-import os
-
-
-from clmgr.main import main
-
-test_dir = os.path.dirname(os.path.realpath(__file__))
+from clmgr.tests.test_base import run_test_config
 
 
 def test_remove_java():
-    global test_dir
+    run_test_config("java/", "Remove.java", "remove.yml")
 
-    test_args = [
-        "-c",
-        test_dir + "/config/remove.yml",
-        "--file",
-        test_dir + "/input/java/Remove.java",
-    ]
 
-    # Run clmgr
-    main(test_args)
-
-    # Verify result
-    assert filecmp.cmp(
-        test_dir + "/input/java/Remove.java",
-        test_dir + "/output/java/Remove.java",
-        shallow=False,
-    )
+def test_remove_typescript():
+    run_test_config("ts/", "remove.component.ts", "remove.yml")

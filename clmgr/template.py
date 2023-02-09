@@ -4,16 +4,20 @@ comments = {
     "java": {
         "start": "/*",
         "char": "*",
-        "line": " *",
+        "line": " * ",
         "end": " */",
-        "license": {"start": " * ---", "end": " * ---"},
+        "divider": True,
+        "license": {"start": "---", "end": "---"},
     },
-    "sh": {
-        "start": "#",
-        "char": "#",
-        "line": "#",
-        "end": "#",
+    "ts": {
+        "start": "/*! *****************************************************************************",
+        "char": "*",
+        "line": "",
+        "end": "****************************************************************************** */",
+        "divider": False,
+        "license": {"start": "---", "end": "---"},
     },
+    "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
 }
 
 licenses = {"default": "All rights reserved."}
