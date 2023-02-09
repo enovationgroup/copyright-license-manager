@@ -142,7 +142,6 @@ def update_copyright(cfg, path, ext, offset, args):
         idx = 0
         for lid in range(len(legal_entities)):
             legal = legal_entities[lid]
-            print(legal)
             year = datetime.datetime.now().year
 
             if lid < len(legal_entities) - 1:
