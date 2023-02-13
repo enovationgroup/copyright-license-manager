@@ -8,5 +8,6 @@
 #
 """Multiple update file testcase"""
 
+
 def multiple_update():
-    print('multiple update')
+    print("multiple update")

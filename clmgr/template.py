@@ -25,7 +25,7 @@ comments = {
         "divider": True,
         "license": {"start": "---", "end": "---"},
     },
-    "py_": {
+    "py": {
         "start": "#",
         "char": "#",
         "line": "# ",

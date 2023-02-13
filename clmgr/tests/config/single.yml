@@ -3,7 +3,7 @@ source:
   - java
   - ts
   - cs
-  - py_
+  - py
 legal:
   - inception: 2015
     name: Enovation Group B.V.

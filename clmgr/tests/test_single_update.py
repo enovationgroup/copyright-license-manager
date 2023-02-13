@@ -10,7 +10,7 @@ def test_single_update_typescript():
 
 
 def test_single_update_python():
-    run_test_config("py/", "single_update.py_", "single.update.yml")
+    run_test_config("py/", "single_update.py", "single.update.yml")
 
 
 def test_single_update_dotnet():

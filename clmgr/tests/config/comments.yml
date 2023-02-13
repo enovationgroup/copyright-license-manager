@@ -2,7 +2,7 @@
 source:
   - java
   - ts
-  - py_
+  - py
   - cs
 legal:
   - inception: 2014

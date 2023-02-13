@@ -4,5 +4,6 @@
 #
 """Remove file testcase"""
 
+
 def remove():
-    print('remove')
+    print("remove")

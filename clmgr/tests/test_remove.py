@@ -10,7 +10,7 @@ def test_remove_typescript():
 
 
 def test_remove_python():
-    run_test_config("py/", "remove.py_", "remove.yml")
+    run_test_config("py/", "remove.py", "remove.yml")
 
 
 def test_remove_dotnet():

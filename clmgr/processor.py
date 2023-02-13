@@ -230,7 +230,7 @@ def process_lines(cfg, path, ext, lines, args):
             offset = 0
 
         # Python
-        if ext.lower() == "py_":
+        if ext.lower() == "py":
             copyright_start = 2
             offset = 0
 

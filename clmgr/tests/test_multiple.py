@@ -10,7 +10,7 @@ def test_multiple_typescript():
 
 
 def test_multiple_python():
-    run_test_config("py/", "multiple.py_", "multiple.yml")
+    run_test_config("py/", "multiple.py", "multiple.yml")
 
 
 def test_multiple_dotnet():

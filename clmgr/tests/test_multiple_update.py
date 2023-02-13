@@ -10,7 +10,7 @@ def test_multiple_update_typsecript():
 
 
 def test_multiple_update_python():
-    run_test_config("py/", "multiple_update.py_", "multiple.update.yml")
+    run_test_config("py/", "multiple_update.py", "multiple.update.yml")
 
 
 def test_multiple_dotnet():

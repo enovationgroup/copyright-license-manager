@@ -10,7 +10,7 @@ def test_comments_typescript():
 
 
 def test_comments_python():
-    run_test_config("py/", "comments.py_", "comments.yml")
+    run_test_config("py/", "comments.py", "comments.yml")
 
 
 def test_comments_dotnet():

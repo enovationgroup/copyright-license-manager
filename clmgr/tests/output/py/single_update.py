@@ -6,5 +6,6 @@
 #
 """Single update file testcase"""
 
+
 def single_update():
-    print('single update')
+    print("single update")
