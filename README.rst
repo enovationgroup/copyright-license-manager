@@ -35,6 +35,16 @@ Installation
 
     pip install clmgr
 
+Features
+--------
+
+Current supported languages
+
+* C#
+* Java
+* Python
+* TypeScript
+
 Testing
 -------
 
