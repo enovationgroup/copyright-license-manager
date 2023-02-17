@@ -2,6 +2,8 @@
 source:
   - java
   - ts
+  - py
+  - cs
 legal:
   - inception: 2014
     name: Enovation Group B.V.

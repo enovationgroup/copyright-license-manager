@@ -7,3 +7,11 @@ def test_single_update_java():
 
 def test_single_update_typescript():
     run_test_config("ts/", "single-update.component.ts", "single.update.yml")
+
+
+def test_single_update_python():
+    run_test_config("py/", "single_update.py", "single.update.yml")
+
+
+def test_single_update_dotnet():
+    run_test_config("cs/", "SingleUpdate.cs", "single.update.yml")

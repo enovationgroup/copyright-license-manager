@@ -7,3 +7,11 @@ def test_comments_java():
 
 def test_comments_typescript():
     run_test_config("ts/", "comments.component.ts", "comments.yml")
+
+
+def test_comments_python():
+    run_test_config("py/", "comments.py", "comments.yml")
+
+
+def test_comments_dotnet():
+    run_test_config("cs/", "Comments.cs", "comments.yml")

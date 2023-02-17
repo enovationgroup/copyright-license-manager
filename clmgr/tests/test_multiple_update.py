@@ -7,3 +7,11 @@ def test_multiple_update_java():
 
 def test_multiple_update_typsecript():
     run_test_config("ts/", "multiple-update.component.ts", "multiple.update.yml")
+
+
+def test_multiple_update_python():
+    run_test_config("py/", "multiple_update.py", "multiple.update.yml")
+
+
+def test_multiple_dotnet():
+    run_test_config("cs/", "MultipleUpdate.cs", "multiple.update.yml")

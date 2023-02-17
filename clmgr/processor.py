@@ -224,6 +224,16 @@ def process_lines(cfg, path, ext, lines, args):
             copyright_start = 2
             offset = 0
 
+        # .NET
+        if ext.lower() == "cs":
+            copyright_start = 2
+            offset = 0
+
+        # Python
+        if ext.lower() == "py":
+            copyright_start = 2
+            offset = 0
+
         # Shell
         # TODO: Implementation
         if ext.lower() == "sh":
