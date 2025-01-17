@@ -50,7 +50,7 @@ def main(args=sys.argv[1:]):
             cfg["license"]["external"] = False
         if "content" not in cfg["license"].keys() or cfg["license"]["content"] is None:
             cfg["license"]["content"] = licenses.get("default")
-    log.debug(f"Configuration:\n{pformat(cfg, indent=2)}")
+    log.debug(f"Configuration: \n{pformat(cfg, indent=2)}")
 
     # Process Input
     # Input can be one of the following:
