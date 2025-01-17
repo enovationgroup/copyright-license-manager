@@ -45,104 +45,212 @@ Current supported languages
 * Python
 * TypeScript
 
-Testing
--------
+Usage
+-----
 
-This project uses ``pytest`` to run tests, if docstring examples are provided or
-included these will be included automatically.
-
-Install test dependencies.
+Basic usage:
 
 .. code-block:: bash
 
-    pip install -r requirements_dev.txt
+    clmgr -c path/to/config.yml -d path/to/source/directory
 
-Run tests.
+Options:
 
-.. code-block:: bash
+-c, --config FILE     Path to the configuration file (default: copyright.yml)
+-d, --dir DIR         Input directory to process (default: current working directory)
+-i, --file FILE       Process a single input file
+--region REGION       Copyright search region (default: 10)
+--debug               Enable verbose logging
+--version             Show version information
 
-    pytest
+Arguments
+---------
 
-Development
------------
+.. list-table::
+   :header-rows: 1
+   :widths: 20 15 65
 
-This project uses ``black`` to format code and ``flake8`` for linting. To ensure
-these actions are run ``pre-commit`` is used. A git alias is provided which
-will configure the entire environment.
+   * - Argument
+     - Default
+     - Description
+   * - ``-c, --config FILE``
+     - ``copyright.yml``
+     - Path to the configuration file
+   * - ``-i, --file FILE``
+     - None
+     - Path to a single input file to process
+   * - ``-d, --dir DIR``
+     - Current working directory
+     - Input directory to process
+   * - ``--region REGION``
+     - 10
+     - Copyright search region, this is the region of the file that will be searched for existing copyright statemens.
+   * - ``--debug``
+     - False
+     - Enable verbose logging
+   * - ``--version``
+     - N/A
+     - Show version information and exit
 
-Configure environment.
+Configuration
+-------------
 
-.. code-block:: bash
+Configuration File
+------------------
 
-    git config include.path ../.gitaliases
-    git setup
+The Copyright License Manager (clmgr) uses a YAML configuration file to specify how copyright notices should be managed. By default, it looks for a file named `copyright.yml` in the current directory, but you can specify a different file using the `-c` or `--config` option.
 
-Install dev dependencies.
+Here's a detailed explanation of the configuration options:
 
-.. code-block:: bash
+Basic Structure
+~~~~~~~~~~~~~~~
 
-    pip install -r requirements_dev.txt
+.. code-block:: yaml
 
-Install for development
+    source:
+      - py
+      - java
+      - cs
+      - ts
+    include:
+      - "src/**/*"
+    exclude:
+      - "**/*.min.js"
+    legal:
+      - inception: 2014
+        name: Enovation Group B.V.
+        locality: Capelle aan den IJssel
+        country: NL
+    license:
+      enabled: true
+      external: false
+      content: All rights reserved.
 
-.. code-block:: bash
+Configuration Options
+~~~~~~~~~~~~~~~~~~~~~
 
-    pip install -e .
+source
+^^^^^^
+A list of file extensions to process. Supported values include 'py', 'java', 'cs', 'ts'.
 
-Format Code
+include
+^^^^^^^
+A list of glob patterns to include files for processing.
 
-.. code-block:: bash
+exclude
+^^^^^^^
+A list of glob patterns to exclude files from processing.
 
-    python -m black clmgr/**
+legal
+^^^^^
+A list of legal entities associated with the copyright. Each entity can have the following properties:
 
-Release (Manual)
-----------------
+- inception: The year when the copyright started
+- name: The name of the copyright holder
+- locality: The city or locality of the copyright holder
+- country: The country code of the copyright holder
 
-The following action describe the manual release process.
+license
+^^^^^^^
+Settings for the license notice:
 
-Install dev dependencies.
+- enabled: Whether to include a license notice (true/false)
+- external: Whether to use an external license file (true/false)
+- content: The content of the license notice (if not using an external file)
 
-.. code-block:: bash
+Advanced Configuration
+~~~~~~~~~~~~~~~~~~~~~~
 
-    pip install -r requirements_dev.txt
+Multiple Legal Entities
+^^^^^^^^^^^^^^^^^^^^^^^
 
-Clean.
+You can specify multiple legal entities in the `legal` section:
 
-.. code-block:: bash
+.. code-block:: yaml
 
-    git clean -xfd
+    legal:
+      - inception: 2014
+        name: Mars Hospital
+        locality: Rotterdam
+        country: NL
+      - inception: 2016
+        name: Lunar Base
+        locality: Capelle aan den IJssel
+        country: NL
+      - inception: 2018
+        name: Enovation Group B.V.
+        locality: Capelle aan den IJssel
+        country: NL
 
-Build.
+This is useful when the copyright has been transferred between different entities over time.
 
-.. code-block:: bash
+Removing Copyright Notices
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    python setup.py sdist bdist_wheel
+Copyright statements that are not defined in the legal block will be removed.
 
-Verify.
+External License File
+^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+If you want to use an external file for the license notice:
 
-    twine check dist/*
+.. code-block:: yaml
 
-Upload.
+    license:
+      enabled: true
+      external: true
 
-.. code-block:: bash
+Examples
+~~~~~~~~
 
-    twine upload dist/*
+1. Basic configuration for a single company with license:
 
-Release
--------
+   .. code-block:: yaml
 
-Releases are published automatically when a tag is pushed to GitHub.
+       source:
+         - py
+         - java
+       legal:
+         - inception: 2015
+           name: Enovation Group B.V.
+           locality: Capelle aan den IJssel
+           country: NL
+       license:
+         enabled: true
+         content: All rights reserved.
 
-.. code-block:: bash
+2. Configuration with multiple legal entities, removals, and custom license:
 
-    # Set next version number
-    export RELEASE=x.x.x
+   .. code-block:: yaml
 
-    # Create tags
-    git commit --allow-empty -m "build: release ${RELEASE}"
-    git tag -a ${RELEASE} -m "build: release ${RELEASE}"
+       source:
+         - java
+         - ts
+         - cs
+         - py
+       legal:
+         - inception: 2014
+           name: Mars Hospital
+           locality: Rotterdam
+           country: NL
+         - inception: 2017
+           name: Lunar Base
+           locality: Capelle aan den IJssel
+           country: NL
+         - inception: 2019
+           name: Enovation Group B.V.
+           locality: Capelle aan den IJssel
+           country: NL
+       license:
+         enabled: true
+         external: false
+         content: All rights reserved.
+       include:
+       exclude:
 
-    # Push - Assume that we are working from a fork
-    git push upstream --tags
+Contributing
+------------
+
+We welcome contributions to the Copyright License Manager! 
+
+For information on contributing to this project, please see our `Development Guide <DEVELOPMENT.rst>`_.
