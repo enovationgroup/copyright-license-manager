@@ -84,7 +84,7 @@ Arguments
      - Input directory to process
    * - ``--region REGION``
      - 10
-     - Copyright search region, this is the region of the file that will be searched for existing copyright statemens.
+     - Copyright search region, this is the region of the file that will be searched for existing copyright statemens, the value is the amount of lines that will be searched from the starting of the files.
    * - ``--debug``
      - False
      - Enable verbose logging
