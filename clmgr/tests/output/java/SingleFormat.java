@@ -1,6 +1,6 @@
 package nl.enovationgroup.copyright.test;
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 - 2025 [Enovation B.V. - Capelle aan den IJssel - NL]
+ * Copyright (c) 2015 - 2025 [Enovation Group B.V. - Capelle aan den IJssel]
  *
  * ---
  * All rights reserved.
@@ -8,7 +8,7 @@ package nl.enovationgroup.copyright.test;
  *
  */
 
-class Remove {
+class Single {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }

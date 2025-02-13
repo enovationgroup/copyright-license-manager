@@ -50,6 +50,7 @@ def insert_copyright(cfg, path, ext, offset, args):
                 year = legal_entities[legal_entities_idx + 1]["inception"]
 
             tmpl = template(
+                cfg["format"],
                 legal["inception"],
                 year,
                 legal["name"],
@@ -148,6 +149,7 @@ def update_copyright(cfg, path, ext, offset, args):
                 year = legal_entities[lid + 1]["inception"]
 
             tmpl = template(
+                cfg["format"],
                 legal["inception"],
                 year,
                 legal["name"],
