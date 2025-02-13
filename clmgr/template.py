@@ -33,16 +33,12 @@ comments = {
         "divider": False,
         "license": {"start": "---", "end": "---"},
     },
-    "sh": {
-        "start": "#",
-        "char": "#",
-        "line": "#",
-        "end": "#"
-    },
+    "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
 }
 
 licenses = {"default": "All rights reserved."}
 
+
 # format the copyright statement
 def template(copyright_format, inception, year, name, locality, country):
-    return eval(f"f'{copyright_format}]'")
+    return eval(f"f'{copyright_format}'")
