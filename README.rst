@@ -121,6 +121,7 @@ Basic Structure
         name: Enovation Group B.V.
         locality: Capelle aan den IJssel
         country: NL
+    format: "Copyright (c) {inception} - {year} [{name} - {locality} - {country}]"
     license:
       enabled: true
       external: false
@@ -149,6 +150,18 @@ A list of legal entities associated with the copyright. Each entity can have the
 - name: The name of the copyright holder
 - locality: The city or locality of the copyright holder
 - country: The country code of the copyright holder
+
+format
+^^^^^^
+The format string for each row in the copyright notice. This property is optional and by default,
+it is set to `SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]`.
+The following placeholders can be used:
+
+- {inception}: The year when the copyright started
+- {year}: The current year
+- {name}: The name of the copyright holder
+- {locality}: The city or locality of the copyright holder
+- {country}: The country code of the copyright holder
 
 license
 ^^^^^^^
@@ -247,6 +260,25 @@ Examples
          content: All rights reserved.
        include:
        exclude:
+
+Docker
+----------------
+
+Build the docker container locally.
+
+.. code-block:: bash
+
+    docker build -t clmgr:latest .
+
+`--network=host` might be needed for the container build to resolve the DNS from the host machine.
+
+Run the docker container in a project.
+
+.. code-block:: bash
+
+    docker run -v .:/work -it clmgr:latest
+
+`-v .:/work` will mount the current directory to work dir in the docker container.
 
 Contributing
 ------------
