@@ -51,7 +51,9 @@ def main(args=sys.argv[1:]):
         if "content" not in cfg["license"].keys() or cfg["license"]["content"] is None:
             cfg["license"]["content"] = licenses.get("default")
     if "format" not in cfg.keys() or cfg["format"] is None:
-        cfg["format"] = "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]"
+        cfg["format"] = (
+            "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]"
+        )
     log.debug(f"Configuration: \n{pformat(cfg, indent=2)}")
 
     # Process Input
