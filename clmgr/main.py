@@ -64,6 +64,7 @@ def main(args=sys.argv[1:]):
     # the current working directory or through the flag -c, --config
     add = 0
     upd = 0
+    utd = 0
 
     includes = r"|".join([translate(i) for i in cfg["include"]])
     excludes = r"|".join([translate(e) for e in cfg["exclude"]]) or r"$."
@@ -105,6 +106,8 @@ def main(args=sys.argv[1:]):
             res = process_lines(cfg, file, ext, lines, args)
             add += res[0]
             upd += res[1]
+            utd += res[2]
 
     print(f"[{add}] Copyright added")
-    print(f"[{upd}] Copyright Updated")
+    print(f"[{upd}] Copyright updated")
+    print(f"[{utd}] Copyright up to date")

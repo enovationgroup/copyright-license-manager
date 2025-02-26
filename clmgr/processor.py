@@ -1,6 +1,7 @@
 """Processor functions"""
 
 import datetime
+import filecmp
 import os
 
 from clmgr.template import template, comments
@@ -202,13 +203,18 @@ def update_copyright(cfg, path, ext, offset, args):
         src_write.flush()
         src_write.close()
 
+        result = filecmp.cmp(backup_file, path.absolute(), shallow=False)
+
         # Remove original file
         os.replace(backup_file, path.absolute())
+
+        return not result
 
 
 def process_lines(cfg, path, ext, lines, args):
     add = 0
     upd = 0
+    utd = 0
     copyright_start = 3
     offset = 0
 
@@ -244,9 +250,11 @@ def process_lines(cfg, path, ext, lines, args):
             insert_copyright(cfg, path, ext, offset, args)
             add += 1
         else:
-            update_copyright(cfg, path, ext, offset, args)
-            upd += 1
+            if update_copyright(cfg, path, ext, offset, args):
+                upd += 1
+            else:
+                utd += 1
     except IndexError:
         pass
 
-    return add, upd
+    return add, upd, utd
