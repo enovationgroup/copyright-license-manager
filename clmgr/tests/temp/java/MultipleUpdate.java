@@ -1,4 +1,3 @@
-package nl.enovationgroup.copyright.test;
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2014 - 2017 [Mars Hospital - Rotterdam - NL]
  * SPDX-FileCopyrightText: Copyright (c) 2017 - 2019 [Lunar Base - Capelle aan den IJssel - NL]
@@ -9,6 +8,7 @@ package nl.enovationgroup.copyright.test;
  * ---
  *
  */
+package nl.enovationgroup.copyright.test;
 
 class MultipleUpdate {
     public static void main(String[] args) {

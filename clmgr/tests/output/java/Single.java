@@ -1,4 +1,3 @@
-package nl.enovationgroup.copyright.test;
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2015 - 2025 [Enovation Group B.V. - Capelle aan den IJssel - NL]
  *
@@ -7,6 +6,7 @@ package nl.enovationgroup.copyright.test;
  * ---
  *
  */
+package nl.enovationgroup.copyright.test;
 
 class Single {
     public static void main(String[] args) {

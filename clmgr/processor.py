@@ -214,12 +214,9 @@ def process_lines(cfg, path, ext, lines, args):
 
     try:
         # Java
-        # The file should ALWAYS start with the package name.
-        # This will automatically mean that with the comment separation lines
-        # the first copyright line will always be on line 3
-        # and the offset will be 1 (the package line).
         if ext.lower() == "java":
-            offset = 1
+            copyright_start = 2
+            offset = 0
 
         # Typescript
         if ext.lower() == "ts":
