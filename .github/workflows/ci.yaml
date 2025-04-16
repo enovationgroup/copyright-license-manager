@@ -17,7 +17,9 @@ jobs:
 
       - name: Install dependencies for macOS
         if: runner.os == 'macOS'
-        run: brew install gettext
+        run: |
+          brew install gettext
+          brew link --force gettext
 
       - name: Setup python
         uses: actions/setup-python@v5
