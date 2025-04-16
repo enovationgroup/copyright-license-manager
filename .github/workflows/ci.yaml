@@ -20,13 +20,13 @@ jobs:
         run: |
           brew install gettext
           brew link --force gettext
-          export PATH="/usr/local/opt/gettext/bin:$PATH"  # Ensure gettext binaries are in the PATH
-          export LDFLAGS="-L/usr/local/opt/gettext/lib"  # Update linker flags
-          export CPPFLAGS="-I/usr/local/opt/gettext/include"  # Update C preprocessor flags
+          export PATH="$(brew --prefix gettext)/bin:$PATH"  # Dynamically set PATH for gettext
+          export LDFLAGS="-L$(brew --prefix gettext)/lib"  # Update linker flags dynamically
+          export CPPFLAGS="-I$(brew --prefix gettext)/include"  # Update preprocessor flags
           # Explicitly verify and create symlinks if necessary
-          if [ ! -f /usr/local/opt/gettext/lib/libintl.8.dylib ]; then
+          if [ ! -f "$(brew --prefix gettext)/lib/libintl.8.dylib" ]; then
             echo "gettext library not found, creating symlink..."
-            ln -s /usr/local/Cellar/gettext/*/lib/libintl.8.dylib /usr/local/opt/gettext/lib/libintl.8.dylib
+            ln -s $(brew --prefix gettext)/lib/libintl.8.dylib /usr/local/opt/gettext/lib/libintl.8.dylib
           fi
 
       - name: Setup python
