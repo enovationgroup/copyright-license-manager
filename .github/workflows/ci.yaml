@@ -23,10 +23,19 @@ jobs:
           export PATH="$(brew --prefix gettext)/bin:$PATH"  # Dynamically set PATH for gettext
           export LDFLAGS="-L$(brew --prefix gettext)/lib"  # Update linker flags dynamically
           export CPPFLAGS="-I$(brew --prefix gettext)/include"  # Update preprocessor flags
-          # Explicitly verify and create symlinks if necessary
-          if [ ! -f "$(brew --prefix gettext)/lib/libintl.8.dylib" ]; then
-            echo "gettext library not found, creating symlink..."
-            ln -s $(brew --prefix gettext)/lib/libintl.8.dylib /usr/local/opt/gettext/lib/libintl.8.dylib
+      
+          # Verify and create symlink for the required library
+          GETTEXT_LIB_PATH="$(brew --prefix gettext)/lib/libintl.8.dylib"
+          if [ ! -f "$GETTEXT_LIB_PATH" ]; then
+            echo "Creating missing symlink for libintl.8.dylib..."
+            sudo mkdir -p /usr/local/opt/gettext/lib
+            sudo ln -s "$GETTEXT_LIB_PATH" /usr/local/opt/gettext/lib/libintl.8.dylib
+          fi
+      
+          # Confirm the library is accessible
+          if [ ! -f /usr/local/opt/gettext/lib/libintl.8.dylib ]; then
+            echo "Error: libintl.8.dylib could not be found or linked."
+            exit 1
           fi
 
       - name: Setup python
