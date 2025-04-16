@@ -20,6 +20,9 @@ jobs:
         run: |
           brew install gettext
           brew link --force gettext
+          export PATH="/usr/local/opt/gettext/bin:$PATH"  # Ensure gettext binaries are in the PATH
+          export LDFLAGS="-L/usr/local/opt/gettext/lib"  # Update linker flags
+          export CPPFLAGS="-I/usr/local/opt/gettext/include"  # Update C preprocessor flags
 
       - name: Setup python
         uses: actions/setup-python@v5
