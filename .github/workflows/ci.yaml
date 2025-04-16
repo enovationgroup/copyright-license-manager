@@ -15,29 +15,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install dependencies for macOS
-        if: runner.os == 'macOS'
-        run: |
-          brew install gettext
-          brew link --force gettext
-          export PATH="$(brew --prefix gettext)/bin:$PATH"  # Dynamically set PATH for gettext
-          export LDFLAGS="-L$(brew --prefix gettext)/lib"  # Update linker flags dynamically
-          export CPPFLAGS="-I$(brew --prefix gettext)/include"  # Update preprocessor flags
-      
-          # Verify and create symlink for the required library
-          GETTEXT_LIB_PATH="$(brew --prefix gettext)/lib/libintl.8.dylib"
-          if [ ! -f "$GETTEXT_LIB_PATH" ]; then
-            echo "Creating missing symlink for libintl.8.dylib..."
-            sudo mkdir -p /usr/local/opt/gettext/lib
-            sudo ln -s "$GETTEXT_LIB_PATH" /usr/local/opt/gettext/lib/libintl.8.dylib
-          fi
-      
-          # Confirm the library is accessible
-          if [ ! -f /usr/local/opt/gettext/lib/libintl.8.dylib ]; then
-            echo "Error: libintl.8.dylib could not be found or linked."
-            exit 1
-          fi
-
       - name: Setup python
         uses: actions/setup-python@v5
         with:
