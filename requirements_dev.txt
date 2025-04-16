@@ -3,3 +3,4 @@ pytest
 pytest-cov
 twine
 pre-commit
+PyYAML>=5.4,<7.0
