@@ -3,4 +3,3 @@ pytest
 pytest-cov
 twine
 pre-commit
-setuptools<67
