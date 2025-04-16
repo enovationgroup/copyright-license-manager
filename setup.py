@@ -14,7 +14,7 @@ LICENSE = "MIT"
 
 cwd = os.path.abspath(os.path.dirname(__file__))
 
-with io.open(os.path.join(cwd, "README.rst"), encoding="utf-8", mode="r") as fh:
+with io.open(os.path.join(cwd, "README.md"), encoding="utf-8", mode="r") as fh:
     long_description = "\n" + fh.read()
 
 with io.open(os.path.join(cwd, "requirements.txt"), encoding="utf-8", mode="r") as fh:
@@ -25,7 +25,7 @@ setup(
     version=versioneer.get_version(),
     description=DESCRIPTION,
     long_description=long_description,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     author=AUTHOR,
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
