@@ -157,11 +157,11 @@ The format string for each row in the copyright notice. This property is optiona
 it is set to `SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]`.
 The following placeholders can be used:
 
-- {inception}: The year when the copyright started
-- {year}: The current year
-- {name}: The name of the copyright holder
-- {locality}: The city or locality of the copyright holder
-- {country}: The country code of the copyright holder
+- inception: The year when the copyright started
+- year: The current year
+- name: The name of the copyright holder
+- locality: The city or locality of the copyright holder
+- country: The country code of the copyright holder
 
 license
 ^^^^^^^
