@@ -23,6 +23,11 @@ jobs:
           export PATH="/usr/local/opt/gettext/bin:$PATH"  # Ensure gettext binaries are in the PATH
           export LDFLAGS="-L/usr/local/opt/gettext/lib"  # Update linker flags
           export CPPFLAGS="-I/usr/local/opt/gettext/include"  # Update C preprocessor flags
+          # Explicitly verify and create symlinks if necessary
+          if [ ! -f /usr/local/opt/gettext/lib/libintl.8.dylib ]; then
+            echo "gettext library not found, creating symlink..."
+            ln -s /usr/local/Cellar/gettext/*/lib/libintl.8.dylib /usr/local/opt/gettext/lib/libintl.8.dylib
+          fi
 
       - name: Setup python
         uses: actions/setup-python@v5
