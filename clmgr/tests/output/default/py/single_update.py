@@ -8,4 +8,4 @@
 
 
 def single_update():
-    print("single update")
+    print("Copyright single update")

@@ -7,5 +7,5 @@
 """Single file testcase"""
 
 
-def single():
-    print("single")
+def no_change():
+    print("no-change")

@@ -12,6 +12,7 @@ import { Component } from '@angular/core';
 export class SingleComponent {
 
     constructor() {
+        console.log("Copyright test single");
     }
 
 }

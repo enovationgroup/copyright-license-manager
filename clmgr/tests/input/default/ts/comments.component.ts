@@ -5,11 +5,12 @@ This line should also remain intact
 import { Component } from '@angular/core';
 
 @Component({
-    selector: 'app-multiple'
+    selector: 'app-comments'
 })
-export class MultipleComponent {
+export class CommentsComponent {
 
     constructor() {
+        console.log("Copyright test comments");
     }
 
 }

@@ -12,6 +12,6 @@ package nl.enovationgroup.copyright.test;
 
 class Comments {
     public static void main(String[] args) {
-        System.out.println("Hello, World!");
+        System.out.println("Copyright test comments!");
     }
 }

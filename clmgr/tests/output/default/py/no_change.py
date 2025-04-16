@@ -4,8 +4,8 @@
 # All rights reserved.
 # ---
 #
-"""Single file testcase"""
+"""No change file testcase"""
 
 
-def single():
-    print("single")
+def no_change():
+    print("Copyright no change")

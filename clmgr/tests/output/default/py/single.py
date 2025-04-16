@@ -8,4 +8,4 @@
 
 
 def single():
-    print("single")
+    print("Copyright single")

@@ -2,4 +2,4 @@
 
 
 def multiple():
-    print("multiple")
+    print("Copyright multiple")
