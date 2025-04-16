@@ -11,10 +11,10 @@ import { Component } from '@angular/core';
 @Component({
     selector: 'app-comments'
 })
-export class CommntsComponent {
+export class CommentsComponent {
 
     constructor() {
-        console.log("Copyright test comments");
+        console.log('Copyright test comments');
     }
 
 }

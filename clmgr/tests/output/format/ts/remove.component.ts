@@ -12,7 +12,7 @@ import { Component } from '@angular/core';
 export class RemoveComponent {
 
     constructor() {
-        console.log("Copyright test remove");
+        console.log('Copyright test remove');
     }
 
 }

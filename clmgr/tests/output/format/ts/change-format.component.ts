@@ -1,5 +1,5 @@
 /*! *****************************************************************************
-SPDX-FileCopyrightText: Copyright (c) 2017 - 2025 [Enovation B.V. - Capelle aan den IJssel - NL]
+Copyright (c) 2015 - 2025 [Enovation Group B.V. - Capelle aan den IJssel]
 ---
 All rights reserved.
 ---
@@ -7,12 +7,12 @@ All rights reserved.
 import { Component } from '@angular/core';
 
 @Component({
-    selector: 'app-remove'
+    selector: 'app-change-format'
 })
-export class RemoveComponent {
+export class ChangeFormatComponent {
 
     constructor() {
-        console.log('Copyright test remove');
+        console.log('Copyright test change format');
     }
 
 }

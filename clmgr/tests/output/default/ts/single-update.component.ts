@@ -12,7 +12,7 @@ import { Component } from '@angular/core';
 export class SingleUpdateComponent {
 
     constructor() {
-        console.log("Copyright test single update");
+        console.log('Copyright test single update');
     }
 
 }

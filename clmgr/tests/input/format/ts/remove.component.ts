@@ -1,6 +1,6 @@
 /*! *****************************************************************************
- * Copyright (c) 2014 - 2016 [Mars Hospital - Rotterdam - NL]
- * Copyright (c) 2016 - 2018 [Lunar Base - Capelle aan den IJssel - NL]
+Copyright (c) 2014 - 2016 [Mars Hospital - Rotterdam - NL]
+Copyright (c) 2016 - 2018 [Lunar Base - Capelle aan den IJssel - NL]
 ****************************************************************************** */
 import { Component } from '@angular/core';
 
@@ -10,7 +10,7 @@ import { Component } from '@angular/core';
 export class RemoveComponent {
 
     constructor() {
-        console.log("Copyright test remove");
+        console.log('Copyright test remove');
     }
 
 }

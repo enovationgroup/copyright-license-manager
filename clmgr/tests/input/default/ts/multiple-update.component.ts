@@ -11,7 +11,7 @@ import { Component } from '@angular/core';
 export class MultipleUpdateComponent {
 
     constructor() {
-        console.log("Copyright test multiple update");
+        console.log('Copyright test multiple update');
     }
 
 }

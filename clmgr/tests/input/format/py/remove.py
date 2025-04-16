@@ -6,4 +6,4 @@
 
 
 def remove():
-    print("remove")
+    print("Copyright test remove")

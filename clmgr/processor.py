@@ -134,7 +134,11 @@ def update_copyright(cfg, path, ext, offset, args):
         # This block contains only the copyright lines
         copyright_block = []
         for x in range(len(lines)):
-            if "Copyright" in lines[x] and x <= args.region:
+            if (
+                lines[x].startswith(line)
+                and "Copyright" in lines[x]
+                and x <= args.region
+            ):
                 copyright_block.append(lines[x])
         # Remove the copyright block lines from the source code
         for y in copyright_block:

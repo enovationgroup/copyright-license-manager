@@ -10,7 +10,7 @@ import { Component } from '@angular/core';
 export class CommentsComponent {
 
     constructor() {
-        console.log("Copyright test comments");
+        console.log('Copyright test comments');
     }
 
 }

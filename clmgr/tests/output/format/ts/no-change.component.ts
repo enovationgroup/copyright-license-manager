@@ -7,11 +7,12 @@ All rights reserved.
 import { Component } from '@angular/core';
 
 @Component({
-    selector: 'app-single'
+    selector: 'app-no-change'
 })
 export class NoChangeComponent {
 
     constructor() {
+        console.log('Copyright test no change');
     }
 
 }

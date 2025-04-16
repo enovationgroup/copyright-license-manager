@@ -12,7 +12,7 @@ import { Component } from '@angular/core';
 export class NoChangeComponent {
 
     constructor() {
-        console.log("Copyright test no change");
+        console.log('Copyright test no change');
     }
 
 }

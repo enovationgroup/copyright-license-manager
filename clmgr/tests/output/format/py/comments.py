@@ -10,4 +10,4 @@
 
 
 def comments():
-    print("comments")
+    print("Copyright test comments")

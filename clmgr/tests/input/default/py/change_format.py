@@ -7,5 +7,5 @@
 """Single file testcase"""
 
 
-def single():
-    print("Copyright test single")
+def change_format():
+    print("Copyright test change format")
