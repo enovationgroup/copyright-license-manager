@@ -1,4 +1,5 @@
 """Log functions"""
+
 import logging
 
 
