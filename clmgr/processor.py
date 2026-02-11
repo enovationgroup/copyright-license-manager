@@ -1,6 +1,7 @@
 """Processor functions"""
 
 import datetime
+import filecmp
 import os
 
 from clmgr.template import template, comments
@@ -50,6 +51,7 @@ def insert_copyright(cfg, path, ext, offset, args):
                 year = legal_entities[legal_entities_idx + 1]["inception"]
 
             tmpl = template(
+                cfg["format"],
                 legal["inception"],
                 year,
                 legal["name"],
@@ -132,7 +134,11 @@ def update_copyright(cfg, path, ext, offset, args):
         # This block contains only the copyright lines
         copyright_block = []
         for x in range(len(lines)):
-            if "Copyright" in lines[x] and x <= args.region:
+            if (
+                lines[x].startswith(line)
+                and "Copyright" in lines[x]
+                and x <= args.region
+            ):
                 copyright_block.append(lines[x])
         # Remove the copyright block lines from the source code
         for y in copyright_block:
@@ -148,6 +154,7 @@ def update_copyright(cfg, path, ext, offset, args):
                 year = legal_entities[lid + 1]["inception"]
 
             tmpl = template(
+                cfg["format"],
                 legal["inception"],
                 year,
                 legal["name"],
@@ -200,24 +207,26 @@ def update_copyright(cfg, path, ext, offset, args):
         src_write.flush()
         src_write.close()
 
+        result = filecmp.cmp(backup_file, path.absolute(), shallow=False)
+
         # Remove original file
         os.replace(backup_file, path.absolute())
+
+        return not result
 
 
 def process_lines(cfg, path, ext, lines, args):
     add = 0
     upd = 0
+    utd = 0
     copyright_start = 3
     offset = 0
 
     try:
         # Java
-        # The file should ALWAYS start with the package name.
-        # This will automatically mean that with the comment separation lines
-        # the first copyright line will always be on line 3
-        # and the offset will be 1 (the package line).
         if ext.lower() == "java":
-            offset = 1
+            copyright_start = 2
+            offset = 0
 
         # Typescript
         if ext.lower() == "ts":
@@ -245,9 +254,11 @@ def process_lines(cfg, path, ext, lines, args):
             insert_copyright(cfg, path, ext, offset, args)
             add += 1
         else:
-            update_copyright(cfg, path, ext, offset, args)
-            upd += 1
+            if update_copyright(cfg, path, ext, offset, args):
+                upd += 1
+            else:
+                utd += 1
     except IndexError:
         pass
 
-    return add, upd
+    return add, upd, utd

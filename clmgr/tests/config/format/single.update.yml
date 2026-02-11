@@ -1,0 +1,18 @@
+---
+source:
+  - java
+  - ts
+  - cs
+  - py
+legal:
+  - inception: 2014
+    name: Enovation Group B.V.
+    locality: Capelle aan den IJssel
+    country: NL
+license:
+  enabled: true
+  external: false
+  content: All rights reserved.
+format: 'Copyright (c) {inception} - {year} [{name} - {locality}]'
+include:
+exclude:
