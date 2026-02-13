@@ -36,8 +36,8 @@ comments = {
     "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
     "sql": {
         "start": "/*",
-        "char": "*",
-        "line": " * ",
+        "char": "",
+        "line": "  ",
         "end": "*/",
         "divider": False,
         "license": {"start": "---", "end": "---"},

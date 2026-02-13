@@ -149,11 +149,16 @@ def insert_copyright(cfg, path, ext, offset, args):
 
             # For single-line comment styles (e.g. '#'), we already write a leading
             # start marker line ourselves, so drop an existing bare start marker
-            # to avoid duplication.
+            # to avoid duplication. Also drop trailing bare marker since we write
+            # end + "\n" ourselves.
             if start == end and header_body_lines:
                 first = header_body_lines[0]
                 if first.strip() == start:
                     header_body_lines = header_body_lines[1:]
+                if header_body_lines:
+                    last = header_body_lines[-1]
+                    if last.strip() == end:
+                        header_body_lines = header_body_lines[:-1]
 
         line_prefix = line
         if header_detected and start != end:

@@ -1,7 +1,10 @@
 /*
-  Copyright (c) 2014 - 2016 [Mars Hospital - Rotterdam - NL]
-  Copyright (c) 2016 - 2018 [Lunar Base - Capelle aan den IJssel - NL]
-  Copyright (c) 2018 - 2020 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+  Copyright (c) 2014 - 2017 [Mars Hospital - Rotterdam]
+  Copyright (c) 2017 - 2019 [Lunar Base - Capelle aan den IJssel]
+  Copyright (c) 2019 - 2026 [Enovation Group B.V. - Capelle aan den IJssel]
+  ---
+  All rights reserved.
+  ---
 */
 
 SELECT * FROM test;
