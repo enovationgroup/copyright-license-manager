@@ -34,6 +34,14 @@ comments = {
         "license": {"start": "---", "end": "---"},
     },
     "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
+    "sql": {
+        "start": "/*",
+        "char": "*",
+        "line": " * ",
+        "end": "*/",
+        "divider": False,
+        "license": {"start": "---", "end": "---"},
+    }
 }
 
 licenses = {"default": "All rights reserved."}

@@ -6,7 +6,6 @@ from clmgr.main import main
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 
-
 def run_test_config(directory, filename, config):
     test_args = [
         "-c",
@@ -16,7 +15,6 @@ def run_test_config(directory, filename, config):
     ]
 
     run_test(directory, filename, test_args)
-
 
 def run_test(directory, filename, test_args):
     global test_dir
