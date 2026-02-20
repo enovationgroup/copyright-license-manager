@@ -41,7 +41,7 @@ comments = {
         "end": "*/",
         "divider": False,
         "license": {"start": "---", "end": "---"},
-    }
+    },
 }
 
 licenses = {"default": "All rights reserved."}

@@ -8,7 +8,6 @@ import yaml
 
 from clmgr.__version__ import get_versions
 
-
 log = logging.getLogger("root")
 
 

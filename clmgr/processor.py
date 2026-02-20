@@ -98,7 +98,9 @@ def _find_header_block(lines, start, end, max_region=None):
         before_end = after_start.split(end, 1)[0]
         body = []
         if before_end.strip() != "":
-            body.append(before_end + "\n" if not before_end.endswith("\n") else before_end)
+            body.append(
+                before_end + "\n" if not before_end.endswith("\n") else before_end
+            )
         return first_idx, first_idx, body, first_line
 
     for idx in range(first_idx + 1, search_upto):
@@ -143,7 +145,9 @@ def insert_copyright(cfg, path, ext, offset, args):
         header_body_lines = []
         header_end_line = None
         if header_detected:
-            header_start_idx, header_end_idx, header_body_lines, header_end_line = header
+            header_start_idx, header_end_idx, header_body_lines, header_end_line = (
+                header
+            )
             # Remove the entire original header (we'll re-create it)
             del lines[header_start_idx : header_end_idx + 1]
 
@@ -162,7 +166,9 @@ def insert_copyright(cfg, path, ext, offset, args):
 
         line_prefix = line
         if header_detected and start != end:
-            line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
+            line_prefix = _infer_line_prefix_from_header_body(
+                header_body_lines, char, line
+            )
 
         src_write.write(start + "\n")
         legal_entities = cfg["legal"]
@@ -254,7 +260,9 @@ def update_copyright(cfg, path, ext, offset, args):
 
         line_prefix = line
         if header_start_idx is not None and start != end:
-            line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
+            line_prefix = _infer_line_prefix_from_header_body(
+                header_body_lines, char, line
+            )
 
         # Get Copyright block
         # This block contains only the copyright lines
@@ -362,7 +370,9 @@ def process_lines(cfg, path, ext, lines, args):
         header_has_copyright = False
         if header is not None:
             _, _, header_body_lines, _ = header
-            header_has_copyright = any("Copyright" in l for l in header_body_lines)
+            header_has_copyright = any(
+                "Copyright" in line for line in header_body_lines
+            )
 
         if not header_has_copyright:
             insert_copyright(cfg, path, ext, offset, args)
