@@ -33,6 +33,7 @@ def parse_args(args):
     parser.add_argument(
         "--region",
         help="Copyright search region; default=10",
+        type=int,
         default=10,
         metavar="REGION",
     )

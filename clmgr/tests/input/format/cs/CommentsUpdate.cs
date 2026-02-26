@@ -1,10 +1,9 @@
-/*
- * Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel]
+/*************************************************************************
+ * Copyright (c) 2014 - 2020 [Enovation Group B.V. - Capelle aan den IJssel - NL]
  *
  * ---
  * All rights reserved.
  * ---
- *
  * Additional comment lines which should remain intact
  * This line should also remain intact
  *
@@ -16,10 +15,12 @@
  * =======================================================================================================================
  *
  */
-package nl.enovationgroup.copyright.test;
+using System.Collections.Generic;
 
-class Comments {
-    public static void main(String[] args) {
-        System.out.println("Copyright test comments!");
+namespace Enovation.Copyright.Test
+{
+    public static class Comments
+    {
+
     }
 }

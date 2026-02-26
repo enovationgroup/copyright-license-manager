@@ -50,7 +50,7 @@ def _infer_line_prefix_from_header_body(header_body_lines, char, fallback_line_p
     return fallback_line_prefix
 
 
-def _find_header_block(lines, start, end, max_region=None):
+def _find_header_block(lines, start, end, max_region=None, max_header_lines=500):
     """Find the first top-of-file header block.
 
     Returns a tuple: (start_idx, end_idx, body_lines, end_line)
@@ -67,11 +67,11 @@ def _find_header_block(lines, start, end, max_region=None):
     if not lines:
         return None
 
-    search_upto = len(lines)
+    start_search_upto = len(lines)
     if max_region is not None:
-        search_upto = min(search_upto, max_region)
+        start_search_upto = min(start_search_upto, max_region)
 
-    first_idx = _find_first_non_empty_line_index(lines[:search_upto])
+    first_idx = _find_first_non_empty_line_index(lines[:start_search_upto])
     if first_idx is None:
         return None
 
@@ -82,7 +82,7 @@ def _find_header_block(lines, start, end, max_region=None):
     # Single-line comment style (py/sh): header is a run of comment lines.
     if start == end:
         end_idx = first_idx
-        for idx in range(first_idx, search_upto):
+        for idx in range(first_idx, start_search_upto):
             if lines[idx].lstrip().startswith(start):
                 end_idx = idx
             else:
@@ -103,7 +103,8 @@ def _find_header_block(lines, start, end, max_region=None):
             )
         return first_idx, first_idx, body, first_line
 
-    for idx in range(first_idx + 1, search_upto):
+    scan_upto = min(len(lines), first_idx + max_header_lines)
+    for idx in range(first_idx + 1, scan_upto):
         if end in lines[idx]:
             body = lines[first_idx + 1 : idx]
             return first_idx, idx, body, lines[idx]
