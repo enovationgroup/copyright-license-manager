@@ -26,7 +26,9 @@ def test_format_comments_java():
 
 
 def test_format_comments_typescript():
-    run_test_config("format/ts/", "comments-update.component.ts", "format/comments.yml")
+    run_test_config(
+        "format/ts/", "comments-update.component.ts", "format/comments.yml"
+    )
 
 
 def test_format_comments_python():
