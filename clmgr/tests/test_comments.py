@@ -17,6 +17,10 @@ def test_comments_dotnet():
     run_test_config("default/cs/", "Comments.cs", "default/comments.yml")
 
 
+def test_comments_sql():
+    run_test_config("default/sql/", "comments.sql", "default/comments.yml")
+
+
 def test_format_comments_java():
     run_test_config("format/java/", "Comments.java", "format/comments.yml")
 
@@ -31,3 +35,7 @@ def test_format_comments_python():
 
 def test_format_comments_dotnet():
     run_test_config("format/cs/", "Comments.cs", "format/comments.yml")
+
+
+def test_format_comments_sql():
+    run_test_config("format/sql/", "comments.sql", "format/comments.yml")

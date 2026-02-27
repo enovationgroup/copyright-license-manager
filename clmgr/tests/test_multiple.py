@@ -17,6 +17,10 @@ def test_multiple_dotnet():
     run_test_config("default/cs/", "Multiple.cs", "default/multiple.yml")
 
 
+def test_multiple_sql():
+    run_test_config("default/sql/", "multiple.sql", "default/multiple.yml")
+
+
 def test_format_multiple_java():
     run_test_config("format/java/", "Multiple.java", "format/multiple.yml")
 
@@ -31,3 +35,7 @@ def test_format_multiple_python():
 
 def test_format_multiple_dotnet():
     run_test_config("format/cs/", "Multiple.cs", "format/multiple.yml")
+
+
+def test_format_multiple_sql():
+    run_test_config("format/sql/", "multiple.sql", "format/multiple.yml")

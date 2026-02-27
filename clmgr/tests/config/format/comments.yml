@@ -2,8 +2,9 @@
 source:
   - java
   - ts
-  - py
   - cs
+  - py
+  - sql
 legal:
   - inception: 2014
     name: Enovation Group B.V.

@@ -3,8 +3,113 @@
 import datetime
 import filecmp
 import os
+import re
 
 from clmgr.template import template, comments
+
+
+def _find_first_non_empty_line_index(lines):
+    for idx, line in enumerate(lines):
+        if line.strip() != "":
+            return idx
+    return None
+
+
+def _infer_line_prefix_from_header_body(header_body_lines, char, fallback_line_prefix):
+    """Infer the line prefix for comment body lines from an existing header.
+
+    This keeps formatting stable across languages and user styles.
+    Example:
+    - Java/C#: ' * '
+    - SQL fixtures here: '  '
+    """
+
+    for raw in header_body_lines:
+        if raw.strip() == "":
+            continue
+
+        m = re.match(r"^(\s*)(.*)$", raw)
+        if not m:
+            break
+
+        leading_ws = m.group(1)
+        rest = m.group(2)
+
+        # If the line uses a leading comment char (e.g. '*'), keep it.
+        stripped = rest.lstrip()
+        if char and stripped.startswith(char):
+            # Preserve a single space after the char when present/desired.
+            after_char = stripped[len(char) :]
+            if after_char.startswith(" "):
+                return f"{leading_ws}{char} "
+            return f"{leading_ws}{char}"
+
+        # Otherwise it's likely indentation-only style.
+        return leading_ws
+
+    return fallback_line_prefix
+
+
+def _find_header_block(lines, start, end, max_region=None, max_header_lines=500):
+    """Find the first top-of-file header block.
+
+    Returns a tuple: (start_idx, end_idx, body_lines, end_line)
+    - start_idx/end_idx are indices in `lines` (inclusive)
+    - body_lines excludes start/end delimiters
+    - end_line is the original end delimiter line (including newline) when present
+
+    This is intentionally position-agnostic:
+    - it ignores leading whitespace when matching `start`
+    - for block comments it matches `end` by containment (`end in line`)
+    - supports single-line comment styles where start==end (e.g. '#')
+    """
+
+    if not lines:
+        return None
+
+    start_search_upto = len(lines)
+    if max_region is not None:
+        start_search_upto = min(start_search_upto, max_region)
+
+    first_idx = _find_first_non_empty_line_index(lines[:start_search_upto])
+    if first_idx is None:
+        return None
+
+    first_line = lines[first_idx]
+    if not first_line.lstrip().startswith(start):
+        return None
+
+    # Single-line comment style (py/sh): header is a run of comment lines.
+    if start == end:
+        end_idx = first_idx
+        for idx in range(first_idx, start_search_upto):
+            if lines[idx].lstrip().startswith(start):
+                end_idx = idx
+            else:
+                break
+        body = lines[first_idx : end_idx + 1]
+        return first_idx, end_idx, body, None
+
+    # Block comment style (java/cs/sql/ts): find the terminating marker.
+    # Handle `/* ... */` on a single line.
+    if end in first_line and first_line.lstrip().startswith(start):
+        # Preserve any content after the start token and before end token as body.
+        after_start = first_line.split(start, 1)[1]
+        before_end = after_start.split(end, 1)[0]
+        body = []
+        if before_end.strip() != "":
+            body.append(
+                before_end + "\n" if not before_end.endswith("\n") else before_end
+            )
+        return first_idx, first_idx, body, first_line
+
+    scan_upto = min(len(lines), first_idx + max_header_lines)
+    for idx in range(first_idx + 1, scan_upto):
+        if end in lines[idx]:
+            body = lines[first_idx + 1 : idx]
+            return first_idx, idx, body, lines[idx]
+
+    return None
 
 
 def insert_copyright(cfg, path, ext, offset, args):
@@ -35,11 +140,36 @@ def insert_copyright(cfg, path, ext, offset, args):
         license_start = comments.get(ext).get("license").get("start")
         license_end = comments.get(ext).get("license").get("end")
 
-        # Get header
-        header_detected = 0
-        if lines[0].startswith(start):
-            lines = lines[1:]
-            header_detected = 1
+        # Detect an existing header block at the top of the file (position-agnostic)
+        header = _find_header_block(lines, start, end)
+        header_detected = header is not None
+        header_body_lines = []
+        header_end_line = None
+        if header_detected:
+            header_start_idx, header_end_idx, header_body_lines, header_end_line = (
+                header
+            )
+            # Remove the entire original header (we'll re-create it)
+            del lines[header_start_idx : header_end_idx + 1]
+
+            # For single-line comment styles (e.g. '#'), we already write a leading
+            # start marker line ourselves, so drop an existing bare start marker
+            # to avoid duplication. Also drop trailing bare marker since we write
+            # end + "\n" ourselves.
+            if start == end and header_body_lines:
+                first = header_body_lines[0]
+                if first.strip() == start:
+                    header_body_lines = header_body_lines[1:]
+                if header_body_lines:
+                    last = header_body_lines[-1]
+                    if last.strip() == end:
+                        header_body_lines = header_body_lines[:-1]
+
+        line_prefix = line
+        if header_detected and start != end:
+            line_prefix = _infer_line_prefix_from_header_body(
+                header_body_lines, char, line
+            )
 
         src_write.write(start + "\n")
         legal_entities = cfg["legal"]
@@ -58,37 +188,31 @@ def insert_copyright(cfg, path, ext, offset, args):
                 legal["locality"],
                 legal["country"],
             )
-            src_write.write(line + tmpl + "\n")
+            src_write.write(line_prefix + tmpl + "\n")
             legal_entities_idx += 1
 
         if divider:
-            src_write.write(line.rstrip() + "\n")
+            src_write.write(line_prefix.rstrip() + "\n")
         if cfg["license"]["enabled"]:
             if license_start != "":
-                src_write.write(line + license_start + "\n")
+                src_write.write(line_prefix + license_start + "\n")
             if cfg["license"]["external"] is False:
-                src_write.write(line + cfg["license"]["content"] + "\n")
+                src_write.write(line_prefix + cfg["license"]["content"] + "\n")
             # TODO: Read license file
             if license_end != "":
-                src_write.write(line + license_end + "\n")
+                src_write.write(line_prefix + license_end + "\n")
             if divider:
-                src_write.write(line.rstrip() + "\n")
+                src_write.write(line_prefix.rstrip() + "\n")
 
-        if header_detected == 1:
-            comment_lines = 0
-            for x in range(len(lines)):
-                if (
-                    lines[x].startswith(start) or lines[x].startswith(char)
-                ) and not lines[x].startswith(end):
-                    if lines[x].startswith(start):
-                        src_write.write(lines[x])
-                    elif lines[x].startswith(char):
-                        src_write.write(start + lines[x].lstrip(start))
-                    comment_lines += 1
-
-            # Remove written user comment lines from source
-            for x in range(0, comment_lines):
-                lines.pop(0)
+        if header_detected:
+            # Write user header body as-is, then close the comment.
+            src_write.writelines(header_body_lines)
+            if header_end_line is not None:
+                src_write.write(header_end_line)
+                if not header_end_line.endswith("\n"):
+                    src_write.write("\n")
+            else:
+                src_write.write(end + "\n")
         else:
             src_write.write(end + "\n")
 
@@ -110,8 +234,10 @@ def update_copyright(cfg, path, ext, offset, args):
         file=backup_file, encoding="utf-8", mode="w"
     ) as src_write:
         start = comments.get(ext).get("start")
+        char = comments.get(ext).get("char")
         line = comments.get(ext).get("line")
         divider = comments.get(ext).get("divider")
+        end = comments.get(ext).get("end")
 
         # Read lines from source and close it
         lines = src_read.readlines()
@@ -125,27 +251,36 @@ def update_copyright(cfg, path, ext, offset, args):
         # Now strip the written offset lines from the source
         lines = lines[offset:]
 
-        # Get header
-        if lines[0].startswith(start):
-            lines = lines[1:]
-            lines.insert(0, start + "\n")
+        # Detect header block (position-agnostic) within the configured region.
+        header = _find_header_block(lines, start, end, max_region=args.region)
+        header_start_idx = None
+        header_end_idx = None
+        header_body_lines = []
+        if header is not None:
+            header_start_idx, header_end_idx, header_body_lines, _ = header
+
+        line_prefix = line
+        if header_start_idx is not None and start != end:
+            line_prefix = _infer_line_prefix_from_header_body(
+                header_body_lines, char, line
+            )
 
         # Get Copyright block
         # This block contains only the copyright lines
-        copyright_block = []
-        for x in range(len(lines)):
-            if (
-                lines[x].startswith(line)
-                and "Copyright" in lines[x]
-                and x <= args.region
-            ):
-                copyright_block.append(lines[x])
-        # Remove the copyright block lines from the source code
-        for y in copyright_block:
-            lines.remove(y)
+        # Remove existing copyright lines inside the header area, regardless of indentation.
+        if header_start_idx is not None and header_end_idx is not None:
+            header_slice_end = min(header_end_idx + 1, len(lines))
+            for idx in range(header_slice_end - 1, header_start_idx - 1, -1):
+                if "Copyright" in lines[idx]:
+                    lines.pop(idx)
 
         legal_entities = cfg["legal"]
         idx = 0
+        # Insert copyright lines right after the header start (or at top if no header).
+        insert_at = 0
+        if header_start_idx is not None:
+            insert_at = header_start_idx + 1
+
         for lid in range(len(legal_entities)):
             legal = legal_entities[lid]
             year = datetime.datetime.now().year
@@ -161,8 +296,8 @@ def update_copyright(cfg, path, ext, offset, args):
                 legal["locality"],
                 legal["country"],
             )
-            lines.insert(lid + 1, line + tmpl + "\n")
-            idx = lid + 1
+            lines.insert(insert_at + lid, line_prefix + tmpl + "\n")
+            idx = insert_at + lid
 
         # Detect license block
         if cfg["license"]["enabled"]:
@@ -192,15 +327,15 @@ def update_copyright(cfg, path, ext, offset, args):
             else:
                 insert_idx = idx + 1
                 if divider:
-                    lines.insert(insert_idx, line.rstrip() + "\n")
+                    lines.insert(insert_idx, line_prefix.rstrip() + "\n")
                     insert_idx += 1
-                lines.insert(insert_idx, line + license_start + "\n")
+                lines.insert(insert_idx, line_prefix + license_start + "\n")
                 if cfg["license"]["external"] is False:
                     lines.insert(
-                        insert_idx + 1, line + cfg["license"]["content"] + "\n"
+                        insert_idx + 1, line_prefix + cfg["license"]["content"] + "\n"
                     )
                 # TODO: Read license file
-                lines.insert(insert_idx + 2, line + license_end + "\n")
+                lines.insert(insert_idx + 2, line_prefix + license_end + "\n")
 
         # Writes all lines to new file
         src_write.writelines(lines)
@@ -219,38 +354,28 @@ def process_lines(cfg, path, ext, lines, args):
     add = 0
     upd = 0
     utd = 0
-    copyright_start = 3
     offset = 0
 
     try:
-        # Java
-        if ext.lower() == "java":
-            copyright_start = 2
-            offset = 0
-
-        # Typescript
-        if ext.lower() == "ts":
-            copyright_start = 2
-            offset = 0
-
-        # .NET
-        if ext.lower() == "cs":
-            copyright_start = 2
-            offset = 0
-
-        # Python
-        if ext.lower() == "py":
-            copyright_start = 2
-            offset = 0
-
         # Shell
         # TODO: Implementation
         if ext.lower() == "sh":
-            copyright_start = 4
             offset = 1
 
-        start_idx = lines[copyright_start - 1]
-        if "Copyright" not in start_idx:
+        # Determine insert vs update by scanning the header block rather than
+        # relying on a fixed line index (SQL and indented headers break that).
+        start = comments.get(ext).get("start")
+        end = comments.get(ext).get("end")
+        scan_lines = lines[offset:]
+        header = _find_header_block(scan_lines, start, end, max_region=args.region)
+        header_has_copyright = False
+        if header is not None:
+            _, _, header_body_lines, _ = header
+            header_has_copyright = any(
+                "Copyright" in line for line in header_body_lines
+            )
+
+        if not header_has_copyright:
             insert_copyright(cfg, path, ext, offset, args)
             add += 1
         else:

@@ -19,6 +19,10 @@ def test_change_format_dotnet():
     run_test_config("default/cs/", "ChangeFormat.cs", "default/change-format.yml")
 
 
+def test_change_format_sql():
+    run_test_config("default/sql/", "change-format.sql", "default/change-format.yml")
+
+
 def test_format_change_format_java():
     run_test_config("format/java/", "ChangeFormat.java", "format/change-format.yml")
 
@@ -35,3 +39,7 @@ def test_format_change_format_python():
 
 def test_format_change_format_dotnet():
     run_test_config("format/cs/", "ChangeFormat.cs", "format/change-format.yml")
+
+
+def test_format_change_format_sql():
+    run_test_config("format/sql/", "change-format.sql", "format/change-format.yml")

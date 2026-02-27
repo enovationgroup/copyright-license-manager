@@ -17,6 +17,10 @@ def test_no_change_dotnet():
     run_test_config("default/cs/", "NoChange.cs", "default/no-change.yml")
 
 
+def test_no_change_sql():
+    run_test_config("default/sql/", "no-change.sql", "default/no-change.yml")
+
+
 def test_format_no_change_java():
     run_test_config("format/java/", "NoChange.java", "format/no-change.yml")
 
@@ -31,3 +35,7 @@ def test_format_no_change_python():
 
 def test_format_no_change_dotnet():
     run_test_config("format/cs/", "NoChange.cs", "format/no-change.yml")
+
+
+def test_format_no_change_sql():
+    run_test_config("format/sql/", "no-change.sql", "format/no-change.yml")

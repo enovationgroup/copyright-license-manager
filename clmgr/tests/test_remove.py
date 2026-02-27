@@ -17,6 +17,10 @@ def test_remove_dotnet():
     run_test_config("default/cs/", "Remove.cs", "default/remove.yml")
 
 
+def test_remove_sql():
+    run_test_config("default/sql/", "remove.sql", "default/remove.yml")
+
+
 def test_format_remove_java():
     run_test_config("format/java/", "Remove.java", "format/remove.yml")
 
@@ -31,3 +35,7 @@ def test_format_remove_python():
 
 def test_format_remove_dotnet():
     run_test_config("format/cs/", "Remove.cs", "format/remove.yml")
+
+
+def test_format_remove_sql():
+    run_test_config("format/sql/", "remove.sql", "format/remove.yml")

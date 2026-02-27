@@ -18,7 +18,6 @@ from clmgr.log import setup_custom_logger
 from clmgr.processor import process_lines
 from clmgr.template import licenses
 
-
 log = setup_custom_logger("root")
 
 

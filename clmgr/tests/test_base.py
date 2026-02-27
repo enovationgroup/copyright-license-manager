@@ -19,8 +19,6 @@ def run_test_config(directory, filename, config):
 
 
 def run_test(directory, filename, test_args):
-    global test_dir
-
     input_file = test_dir + "/input/" + directory + filename
     temp_file = test_dir + "/temp/" + directory + filename
     output_file = test_dir + "/output/" + directory + filename

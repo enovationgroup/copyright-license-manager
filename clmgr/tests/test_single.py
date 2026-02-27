@@ -17,6 +17,10 @@ def test_single_dotnet():
     run_test_config("default/cs/", "Single.cs", "default/single.yml")
 
 
+def test_single_sql():
+    run_test_config("default/sql/", "single.sql", "default/single.yml")
+
+
 def test_format_single_java():
     run_test_config("format/java/", "Single.java", "format/single.yml")
 
@@ -31,3 +35,7 @@ def test_format_single_python():
 
 def test_format_single_dotnet():
     run_test_config("format/cs/", "Single.cs", "format/single.yml")
+
+
+def test_format_single_sql():
+    run_test_config("format/sql/", "single.sql", "format/single.yml")
