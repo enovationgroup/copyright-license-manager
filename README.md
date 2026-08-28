@@ -39,19 +39,89 @@ Options:
 -d, --dir DIR         Input directory to process (default: current working directory)
 -i, --file FILE       Process a single input file
 --region REGION       Copyright search region (default: 10)
+-n, --dry-run         Report which files would change without writing them
+--check               Implies --dry-run; exit with 1 when a file would change
+--diff                Print a unified diff for every file that is changed
 --debug               Enable verbose logging
 --version             Show version information
 ```
 
 ### Arguments
 
-| Argument            | Default                   | Description                            |
-| ------------------- | ------------------------- | -------------------------------------- |
-| `-c, --config FILE` | `copyright.yml`           | Path to the configuration file         |
-| `-i, --file FILE`   | None                      | Path to a single input file to process |
-| `-d, --dir DIR`     | Current working directory | Input directory to process             |
-| `--debug`           | false                     | Enable verbose logging                 |
-| `--version`         | N/A                       | Show version information and exit      |
+| Argument            | Default                   | Description                                                      |
+| ------------------- | ------------------------- | ---------------------------------------------------------------- |
+| `-c, --config FILE` | `copyright.yml`           | Path to the configuration file                                   |
+| `-i, --file FILE`   | None                      | Path to a single input file to process                           |
+| `-d, --dir DIR`     | Current working directory | Input directory to process                                       |
+| `--region REGION`   | `10`                      | Copyright search region                                          |
+| `-n, --dry-run`     | false                     | Report which files would change without writing them             |
+| `--check`           | false                     | Implies `--dry-run`; exit with `1` when a file would change      |
+| `--diff`            | false                     | Print a unified diff for every file that is changed              |
+| `--debug`           | false                     | Enable verbose logging                                           |
+| `--version`         | N/A                       | Show version information and exit                                |
+
+### Dry run
+
+`--dry-run` reports which files clmgr would change without modifying anything on
+disk. This is useful to verify the `include` and `exclude` patterns of a project:
+
+```shell
+clmgr --dry-run
+```
+
+```text
+would add to src/main/java/com/example/Application.java
+would update src/main/java/com/example/Service.java
+up to date   src/main/java/com/example/Repository.java
+1 file: Copyright would be added
+1 file: Copyright would be updated
+1 file: Copyright up to date
+```
+
+Every scanned file is reported, so a dry run also shows what the `source`,
+`include` and `exclude` options select.
+
+Add `--diff` to see the exact changes that would be made:
+
+```shell
+clmgr --dry-run --diff
+```
+
+`--diff` is independent of `--dry-run`. On a normal run it reports every change
+that is applied, which is useful to see what a run did to a project:
+
+```shell
+clmgr --diff
+```
+
+### Output streams
+
+The report and the summary are written to `stderr`, `--diff` writes to `stdout`.
+Running clmgr in a terminal shows both, but it also means the diff can be saved
+as a patch without having to filter the report out of it:
+
+```shell
+clmgr --dry-run --diff > copyright.patch
+patch -p0 < copyright.patch
+```
+
+### Exit codes
+
+| Code | Meaning                                                            |
+| ---- | ------------------------------------------------------------------ |
+| `0`  | Success; with `--check` no file needs to be changed                |
+| `1`  | With `--check`, at least one file would be changed                 |
+| `2`  | Error, for example a missing configuration file or input directory |
+
+### Continuous integration
+
+Use `--check` to fail a build when copyright headers are missing or out of date.
+It never writes to the working tree, so it is safe to run on any checkout.
+
+```yaml
+- name: Check copyright headers
+  run: clmgr --check --diff
+```
 
 ## Configuration
 
