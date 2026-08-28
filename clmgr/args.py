@@ -37,6 +37,22 @@ def parse_args(args):
         default=10,
         metavar="REGION",
     )
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        help="Report which files would change without writing them",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--check",
+        help="Implies --dry-run; exit with 1 when a file would change",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--diff",
+        help="Print a unified diff for every file that is changed",
+        action="store_true",
+    )
     parser.add_argument("--debug", help="Verbose logging", action="store_true")
     parser.add_argument("--version", help="Show version", action="store_true")
 

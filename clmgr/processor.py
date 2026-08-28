@@ -1,9 +1,10 @@
 """Processor functions"""
 
 import datetime
-import filecmp
 import os
 import re
+import shutil
+import tempfile
 
 from clmgr.template import template, comments
 
@@ -112,248 +113,255 @@ def _find_header_block(lines, start, end, max_region=None, max_header_lines=500)
     return None
 
 
-def insert_copyright(cfg, path, ext, offset, args):
-    # Define backup
-    backup_file = str(path.absolute()) + ".bak"
+def render_insert(cfg, ext, offset, lines):
+    """Render the file contents with a new copyright header inserted.
 
-    # Open source in read_only and backup in write mode
-    with open(file=path.absolute(), encoding="utf-8", mode="r") as src_read, open(
-        file=backup_file, encoding="utf-8", mode="w"
-    ) as src_write:
-        # Read lines from source and close it
-        lines = src_read.readlines()
-        src_read.close()
+    Parameters
+    ----------
+    cfg
+        Parsed configuration
+    ext
+        Source file extension, used to look up the comment style
+    offset
+        Number of leading lines that must be preserved as-is (e.g. shebang)
+    lines
+        Original file contents
 
-        # Write offset to new file
-        for idx in range(len(lines)):
-            if idx < offset:
-                src_write.write(lines[idx])
+    Returns
+    -------
+        The new file contents as a list of lines. The input is left untouched.
 
-        # Now strip the written offset lines from the source
-        lines = lines[offset:]
+    """
+    out = lines[:offset]
+    lines = lines[offset:]
 
-        start = comments.get(ext).get("start")
-        char = comments.get(ext).get("char")
-        line = comments.get(ext).get("line")
-        end = comments.get(ext).get("end")
-        divider = comments.get(ext).get("divider")
+    start = comments.get(ext).get("start")
+    char = comments.get(ext).get("char")
+    line = comments.get(ext).get("line")
+    end = comments.get(ext).get("end")
+    divider = comments.get(ext).get("divider")
+    license_start = comments.get(ext).get("license").get("start")
+    license_end = comments.get(ext).get("license").get("end")
+
+    # Detect an existing header block at the top of the file (position-agnostic)
+    header = _find_header_block(lines, start, end)
+    header_detected = header is not None
+    header_body_lines = []
+    header_end_line = None
+    if header_detected:
+        header_start_idx, header_end_idx, header_body_lines, header_end_line = header
+        # Remove the entire original header (we'll re-create it)
+        del lines[header_start_idx : header_end_idx + 1]
+
+        # For single-line comment styles (e.g. '#'), we already write a leading
+        # start marker line ourselves, so drop an existing bare start marker
+        # to avoid duplication. Also drop trailing bare marker since we write
+        # end + "\n" ourselves.
+        if start == end and header_body_lines:
+            first = header_body_lines[0]
+            if first.strip() == start:
+                header_body_lines = header_body_lines[1:]
+            if header_body_lines:
+                last = header_body_lines[-1]
+                if last.strip() == end:
+                    header_body_lines = header_body_lines[:-1]
+
+    line_prefix = line
+    if header_detected and start != end:
+        line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
+
+    out.append(start + "\n")
+    legal_entities = cfg["legal"]
+    legal_entities_idx = 0
+    for legal in legal_entities:
+        year = datetime.datetime.now().year
+
+        if legal_entities_idx < len(legal_entities) - 1:
+            year = legal_entities[legal_entities_idx + 1]["inception"]
+
+        tmpl = template(
+            cfg["format"],
+            legal["inception"],
+            year,
+            legal["name"],
+            legal["locality"],
+            legal["country"],
+        )
+        out.append(line_prefix + tmpl + "\n")
+        legal_entities_idx += 1
+
+    if divider:
+        out.append(line_prefix.rstrip() + "\n")
+    if cfg["license"]["enabled"]:
+        if license_start != "":
+            out.append(line_prefix + license_start + "\n")
+        if cfg["license"]["external"] is False:
+            out.append(line_prefix + cfg["license"]["content"] + "\n")
+        # TODO: Read license file
+        if license_end != "":
+            out.append(line_prefix + license_end + "\n")
+        if divider:
+            out.append(line_prefix.rstrip() + "\n")
+
+    if header_detected:
+        # Write user header body as-is, then close the comment.
+        out.extend(header_body_lines)
+        if header_end_line is not None:
+            if header_end_line.endswith("\n"):
+                out.append(header_end_line)
+            else:
+                out.append(header_end_line + "\n")
+        else:
+            out.append(end + "\n")
+    else:
+        out.append(end + "\n")
+
+    # Append remaining lines
+    out.extend(lines)
+
+    return out
+
+
+def render_update(cfg, ext, offset, lines, args):
+    """Render the file contents with the existing copyright header updated.
+
+    Parameters
+    ----------
+    cfg
+        Parsed configuration
+    ext
+        Source file extension, used to look up the comment style
+    offset
+        Number of leading lines that must be preserved as-is (e.g. shebang)
+    lines
+        Original file contents
+    args
+        Parsed commandline arguments
+
+    Returns
+    -------
+        The new file contents as a list of lines. The input is left untouched.
+
+    """
+    out = lines[:offset]
+    lines = lines[offset:]
+
+    start = comments.get(ext).get("start")
+    char = comments.get(ext).get("char")
+    line = comments.get(ext).get("line")
+    divider = comments.get(ext).get("divider")
+    end = comments.get(ext).get("end")
+
+    # Detect header block (position-agnostic) within the configured region.
+    header = _find_header_block(lines, start, end, max_region=args.region)
+    header_start_idx = None
+    header_end_idx = None
+    header_body_lines = []
+    if header is not None:
+        header_start_idx, header_end_idx, header_body_lines, _ = header
+
+    line_prefix = line
+    if header_start_idx is not None and start != end:
+        line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
+
+    # Get Copyright block
+    # This block contains only the copyright lines
+    # Remove existing copyright lines inside the header area, regardless of indentation.
+    if header_start_idx is not None and header_end_idx is not None:
+        header_slice_end = min(header_end_idx + 1, len(lines))
+        for idx in range(header_slice_end - 1, header_start_idx - 1, -1):
+            if "Copyright" in lines[idx]:
+                lines.pop(idx)
+
+    legal_entities = cfg["legal"]
+    idx = 0
+    # Insert copyright lines right after the header start (or at top if no header).
+    insert_at = 0
+    if header_start_idx is not None:
+        insert_at = header_start_idx + 1
+
+    for lid in range(len(legal_entities)):
+        legal = legal_entities[lid]
+        year = datetime.datetime.now().year
+
+        if lid < len(legal_entities) - 1:
+            year = legal_entities[lid + 1]["inception"]
+
+        tmpl = template(
+            cfg["format"],
+            legal["inception"],
+            year,
+            legal["name"],
+            legal["locality"],
+            legal["country"],
+        )
+        lines.insert(insert_at + lid, line_prefix + tmpl + "\n")
+        idx = insert_at + lid
+
+    # Detect license block
+    if cfg["license"]["enabled"]:
         license_start = comments.get(ext).get("license").get("start")
         license_end = comments.get(ext).get("license").get("end")
+        license_detected = False
+        license_start_idx = 0
+        license_end_idx = 0
+        license_block = []  # noqa: F841
+        # Search for the start of the License with the search region
+        # If found record index
+        # Search again for end region, this can be larger than the initial
+        # search region therefor to not include the search region when searching
+        # for the license termination marker
+        for x in range(len(lines)):
+            if license_start in lines[x] and x <= args.region:
+                license_detected = True  # We found a license block
+                license_start_idx = x  # Record the start index
 
-        # Detect an existing header block at the top of the file (position-agnostic)
-        header = _find_header_block(lines, start, end)
-        header_detected = header is not None
-        header_body_lines = []
-        header_end_line = None
-        if header_detected:
-            header_start_idx, header_end_idx, header_body_lines, header_end_line = (
-                header
-            )
-            # Remove the entire original header (we'll re-create it)
-            del lines[header_start_idx : header_end_idx + 1]
+        for x in range(len(lines)):
+            if license_end in lines[x] and x > license_start_idx:
+                license_end_idx = x
 
-            # For single-line comment styles (e.g. '#'), we already write a leading
-            # start marker line ourselves, so drop an existing bare start marker
-            # to avoid duplication. Also drop trailing bare marker since we write
-            # end + "\n" ourselves.
-            if start == end and header_body_lines:
-                first = header_body_lines[0]
-                if first.strip() == start:
-                    header_body_lines = header_body_lines[1:]
-                if header_body_lines:
-                    last = header_body_lines[-1]
-                    if last.strip() == end:
-                        header_body_lines = header_body_lines[:-1]
-
-        line_prefix = line
-        if header_detected and start != end:
-            line_prefix = _infer_line_prefix_from_header_body(
-                header_body_lines, char, line
-            )
-
-        src_write.write(start + "\n")
-        legal_entities = cfg["legal"]
-        legal_entities_idx = 0
-        for legal in legal_entities:
-            year = datetime.datetime.now().year
-
-            if legal_entities_idx < len(legal_entities) - 1:
-                year = legal_entities[legal_entities_idx + 1]["inception"]
-
-            tmpl = template(
-                cfg["format"],
-                legal["inception"],
-                year,
-                legal["name"],
-                legal["locality"],
-                legal["country"],
-            )
-            src_write.write(line_prefix + tmpl + "\n")
-            legal_entities_idx += 1
-
-        if divider:
-            src_write.write(line_prefix.rstrip() + "\n")
-        if cfg["license"]["enabled"]:
-            if license_start != "":
-                src_write.write(line_prefix + license_start + "\n")
-            if cfg["license"]["external"] is False:
-                src_write.write(line_prefix + cfg["license"]["content"] + "\n")
-            # TODO: Read license file
-            if license_end != "":
-                src_write.write(line_prefix + license_end + "\n")
-            if divider:
-                src_write.write(line_prefix.rstrip() + "\n")
-
-        if header_detected:
-            # Write user header body as-is, then close the comment.
-            src_write.writelines(header_body_lines)
-            if header_end_line is not None:
-                src_write.write(header_end_line)
-                if not header_end_line.endswith("\n"):
-                    src_write.write("\n")
-            else:
-                src_write.write(end + "\n")
+        if license_detected:
+            # TODO: Process license further if required
+            license_block = lines[license_start_idx:license_end_idx]  # noqa: F841
         else:
-            src_write.write(end + "\n")
+            insert_idx = idx + 1
+            if divider:
+                lines.insert(insert_idx, line_prefix.rstrip() + "\n")
+                insert_idx += 1
+            lines.insert(insert_idx, line_prefix + license_start + "\n")
+            if cfg["license"]["external"] is False:
+                lines.insert(
+                    insert_idx + 1, line_prefix + cfg["license"]["content"] + "\n"
+                )
+            # TODO: Read license file
+            lines.insert(insert_idx + 2, line_prefix + license_end + "\n")
 
-        # Write remaining lines
-        src_write.writelines(lines)
-        src_write.flush()
-        src_write.close()
+    # Append all remaining lines
+    out.extend(lines)
 
-        # Remove original file
-        os.replace(backup_file, path.absolute())
-
-
-def update_copyright(cfg, path, ext, offset, args):
-    # Define backup
-    backup_file = str(path.absolute()) + ".bak"
-
-    # Open source in read_only and backup in write mode
-    with open(file=path.absolute(), encoding="utf-8", mode="r") as src_read, open(
-        file=backup_file, encoding="utf-8", mode="w"
-    ) as src_write:
-        start = comments.get(ext).get("start")
-        char = comments.get(ext).get("char")
-        line = comments.get(ext).get("line")
-        divider = comments.get(ext).get("divider")
-        end = comments.get(ext).get("end")
-
-        # Read lines from source and close it
-        lines = src_read.readlines()
-        src_read.close()
-
-        # Write offset to new file
-        for idx in range(len(lines)):
-            if idx < offset:
-                src_write.write(lines[idx])
-
-        # Now strip the written offset lines from the source
-        lines = lines[offset:]
-
-        # Detect header block (position-agnostic) within the configured region.
-        header = _find_header_block(lines, start, end, max_region=args.region)
-        header_start_idx = None
-        header_end_idx = None
-        header_body_lines = []
-        if header is not None:
-            header_start_idx, header_end_idx, header_body_lines, _ = header
-
-        line_prefix = line
-        if header_start_idx is not None and start != end:
-            line_prefix = _infer_line_prefix_from_header_body(
-                header_body_lines, char, line
-            )
-
-        # Get Copyright block
-        # This block contains only the copyright lines
-        # Remove existing copyright lines inside the header area, regardless of indentation.
-        if header_start_idx is not None and header_end_idx is not None:
-            header_slice_end = min(header_end_idx + 1, len(lines))
-            for idx in range(header_slice_end - 1, header_start_idx - 1, -1):
-                if "Copyright" in lines[idx]:
-                    lines.pop(idx)
-
-        legal_entities = cfg["legal"]
-        idx = 0
-        # Insert copyright lines right after the header start (or at top if no header).
-        insert_at = 0
-        if header_start_idx is not None:
-            insert_at = header_start_idx + 1
-
-        for lid in range(len(legal_entities)):
-            legal = legal_entities[lid]
-            year = datetime.datetime.now().year
-
-            if lid < len(legal_entities) - 1:
-                year = legal_entities[lid + 1]["inception"]
-
-            tmpl = template(
-                cfg["format"],
-                legal["inception"],
-                year,
-                legal["name"],
-                legal["locality"],
-                legal["country"],
-            )
-            lines.insert(insert_at + lid, line_prefix + tmpl + "\n")
-            idx = insert_at + lid
-
-        # Detect license block
-        if cfg["license"]["enabled"]:
-            license_start = comments.get(ext).get("license").get("start")
-            license_end = comments.get(ext).get("license").get("end")
-            license_detected = False
-            license_start_idx = 0
-            license_end_idx = 0
-            license_block = []  # noqa: F841
-            # Search for the start of the License with the search region
-            # If found record index
-            # Search again for end region, this can be larger than the initial
-            # search region therefor to not include the search region when searching
-            # for the license termination marker
-            for x in range(len(lines)):
-                if license_start in lines[x] and x <= args.region:
-                    license_detected = True  # We found a license block
-                    license_start_idx = x  # Record the start index
-
-            for x in range(len(lines)):
-                if license_end in lines[x] and x > license_start_idx:
-                    license_end_idx = x
-
-            if license_detected:
-                # TODO: Process license further if required
-                license_block = lines[license_start_idx:license_end_idx]  # noqa: F841
-            else:
-                insert_idx = idx + 1
-                if divider:
-                    lines.insert(insert_idx, line_prefix.rstrip() + "\n")
-                    insert_idx += 1
-                lines.insert(insert_idx, line_prefix + license_start + "\n")
-                if cfg["license"]["external"] is False:
-                    lines.insert(
-                        insert_idx + 1, line_prefix + cfg["license"]["content"] + "\n"
-                    )
-                # TODO: Read license file
-                lines.insert(insert_idx + 2, line_prefix + license_end + "\n")
-
-        # Writes all lines to new file
-        src_write.writelines(lines)
-        src_write.flush()
-        src_write.close()
-
-        result = filecmp.cmp(backup_file, path.absolute(), shallow=False)
-
-        # Remove original file
-        os.replace(backup_file, path.absolute())
-
-        return not result
+    return out
 
 
-def process_lines(cfg, path, ext, lines, args):
-    add = 0
-    upd = 0
-    utd = 0
+def analyze(cfg, ext, lines, args):
+    """Determine what clmgr would do with a source file, without touching it.
+
+    Parameters
+    ----------
+    cfg
+        Parsed configuration
+    ext
+        Source file extension, used to look up the comment style
+    lines
+        Original file contents
+    args
+        Parsed commandline arguments
+
+    Returns
+    -------
+        A tuple (action, new_lines) where action is one of "add", "update" or
+        "none". For "none" the returned contents are the original contents.
+
+    """
     offset = 0
 
     try:
@@ -376,14 +384,44 @@ def process_lines(cfg, path, ext, lines, args):
             )
 
         if not header_has_copyright:
-            insert_copyright(cfg, path, ext, offset, args)
-            add += 1
-        else:
-            if update_copyright(cfg, path, ext, offset, args):
-                upd += 1
-            else:
-                utd += 1
+            return "add", render_insert(cfg, ext, offset, lines)
+
+        new_lines = render_update(cfg, ext, offset, lines, args)
+        if new_lines != lines:
+            return "update", new_lines
     except IndexError:
         pass
 
-    return add, upd, utd
+    return "none", lines
+
+
+def write_file(path, lines):
+    """Replace the contents of a source file with the rendered contents.
+
+    The new contents are written to a temporary file in the same directory and
+    moved into place, so an interrupted run cannot leave a partially written
+    source file behind.
+
+    Parameters
+    ----------
+    path
+        Path of the source file
+    lines
+        The new file contents
+
+    Returns
+    -------
+        None
+
+    """
+    target = path.absolute()
+    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=target.name, suffix=".tmp")
+    try:
+        with os.fdopen(fd, encoding="utf-8", mode="w") as dst:
+            dst.writelines(lines)
+        shutil.copymode(target, tmp)
+        os.replace(tmp, target)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
