@@ -1,5 +1,6 @@
 """Processor functions"""
 
+import codecs
 import datetime
 import os
 import re
@@ -7,6 +8,69 @@ import shutil
 import tempfile
 
 from clmgr.template import template, comments
+
+
+def _detect_newline(lines, default="\n"):
+    """Determine the line ending used by a source file.
+
+    The first line ending in the file decides, because the header we render is
+    placed at the top. Files without any line ending fall back to `default`
+    rather than to the platform separator: the tool commonly runs on Linux CI
+    over repositories written on Windows, so `os.linesep` would be the wrong
+    guess there.
+
+    Parameters
+    ----------
+    lines
+        File contents, as read by `read_file`
+    default
+        Line ending to assume for a file that contains none
+
+    Returns
+    -------
+        One of "\r\n", "\n" or "\r"
+
+    """
+    for line in lines:
+        if line.endswith("\r\n"):
+            return "\r\n"
+        if line.endswith("\n"):
+            return "\n"
+        if line.endswith("\r"):
+            return "\r"
+
+    return default
+
+
+def _has_bom(path):
+    """Report whether a file starts with a UTF-8 byte order mark"""
+    with open(file=path, mode="rb") as src:
+        return src.read(len(codecs.BOM_UTF8)) == codecs.BOM_UTF8
+
+
+def read_file(path):
+    """Read a source file without altering how it is encoded.
+
+    A byte order mark is consumed rather than decoded, so it cannot end up in
+    the middle of the file once a header is rendered above the first line, and
+    so header detection is not thrown off by a `\ufeff` in front of the comment
+    marker. Line endings are read verbatim instead of being normalised to "\n",
+    which keeps every line the tool does not touch byte for byte identical.
+
+    Both properties are restored by `write_file`.
+
+    Parameters
+    ----------
+    path
+        Path of the source file
+
+    Returns
+    -------
+        The file contents as a list of lines
+
+    """
+    with open(file=path, encoding="utf-8-sig", mode="r", newline="") as src:
+        return src.readlines()
 
 
 def _find_first_non_empty_line_index(lines):
@@ -132,6 +196,7 @@ def render_insert(cfg, ext, offset, lines):
         The new file contents as a list of lines. The input is left untouched.
 
     """
+    nl = _detect_newline(lines)
     out = lines[:offset]
     lines = lines[offset:]
 
@@ -156,7 +221,7 @@ def render_insert(cfg, ext, offset, lines):
         # For single-line comment styles (e.g. '#'), we already write a leading
         # start marker line ourselves, so drop an existing bare start marker
         # to avoid duplication. Also drop trailing bare marker since we write
-        # end + "\n" ourselves.
+        # end + nl ourselves.
         if start == end and header_body_lines:
             first = header_body_lines[0]
             if first.strip() == start:
@@ -170,7 +235,7 @@ def render_insert(cfg, ext, offset, lines):
     if header_detected and start != end:
         line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
 
-    out.append(start + "\n")
+    out.append(start + nl)
     legal_entities = cfg["legal"]
     legal_entities_idx = 0
     for legal in legal_entities:
@@ -187,34 +252,34 @@ def render_insert(cfg, ext, offset, lines):
             legal["locality"],
             legal["country"],
         )
-        out.append(line_prefix + tmpl + "\n")
+        out.append(line_prefix + tmpl + nl)
         legal_entities_idx += 1
 
     if divider:
-        out.append(line_prefix.rstrip() + "\n")
+        out.append(line_prefix.rstrip() + nl)
     if cfg["license"]["enabled"]:
         if license_start != "":
-            out.append(line_prefix + license_start + "\n")
+            out.append(line_prefix + license_start + nl)
         if cfg["license"]["external"] is False:
-            out.append(line_prefix + cfg["license"]["content"] + "\n")
+            out.append(line_prefix + cfg["license"]["content"] + nl)
         # TODO: Read license file
         if license_end != "":
-            out.append(line_prefix + license_end + "\n")
+            out.append(line_prefix + license_end + nl)
         if divider:
-            out.append(line_prefix.rstrip() + "\n")
+            out.append(line_prefix.rstrip() + nl)
 
     if header_detected:
         # Write user header body as-is, then close the comment.
         out.extend(header_body_lines)
         if header_end_line is not None:
-            if header_end_line.endswith("\n"):
+            if header_end_line.endswith(("\n", "\r")):
                 out.append(header_end_line)
             else:
-                out.append(header_end_line + "\n")
+                out.append(header_end_line + nl)
         else:
-            out.append(end + "\n")
+            out.append(end + nl)
     else:
-        out.append(end + "\n")
+        out.append(end + nl)
 
     # Append remaining lines
     out.extend(lines)
@@ -243,6 +308,7 @@ def render_update(cfg, ext, offset, lines, args):
         The new file contents as a list of lines. The input is left untouched.
 
     """
+    nl = _detect_newline(lines)
     out = lines[:offset]
     lines = lines[offset:]
 
@@ -295,7 +361,7 @@ def render_update(cfg, ext, offset, lines, args):
             legal["locality"],
             legal["country"],
         )
-        lines.insert(insert_at + lid, line_prefix + tmpl + "\n")
+        lines.insert(insert_at + lid, line_prefix + tmpl + nl)
         idx = insert_at + lid
 
     # Detect license block
@@ -326,15 +392,15 @@ def render_update(cfg, ext, offset, lines, args):
         else:
             insert_idx = idx + 1
             if divider:
-                lines.insert(insert_idx, line_prefix.rstrip() + "\n")
+                lines.insert(insert_idx, line_prefix.rstrip() + nl)
                 insert_idx += 1
-            lines.insert(insert_idx, line_prefix + license_start + "\n")
+            lines.insert(insert_idx, line_prefix + license_start + nl)
             if cfg["license"]["external"] is False:
                 lines.insert(
-                    insert_idx + 1, line_prefix + cfg["license"]["content"] + "\n"
+                    insert_idx + 1, line_prefix + cfg["license"]["content"] + nl
                 )
             # TODO: Read license file
-            lines.insert(insert_idx + 2, line_prefix + license_end + "\n")
+            lines.insert(insert_idx + 2, line_prefix + license_end + nl)
 
     # Append all remaining lines
     out.extend(lines)
@@ -402,6 +468,10 @@ def write_file(path, lines):
     moved into place, so an interrupted run cannot leave a partially written
     source file behind.
 
+    A file that was read with a byte order mark is written back with one, and
+    the lines keep the endings they were read with, so the only difference from
+    the original is the header itself.
+
     Parameters
     ----------
     path
@@ -415,9 +485,12 @@ def write_file(path, lines):
 
     """
     target = path.absolute()
+    # The mark was consumed while reading, so whether to write one back is
+    # answered by the file we are about to replace.
+    encoding = "utf-8-sig" if _has_bom(target) else "utf-8"
     fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=target.name, suffix=".tmp")
     try:
-        with os.fdopen(fd, encoding="utf-8", mode="w") as dst:
+        with os.fdopen(fd, encoding=encoding, mode="w", newline="") as dst:
             dst.writelines(lines)
         shutil.copymode(target, tmp)
         os.replace(tmp, target)
