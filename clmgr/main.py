@@ -16,7 +16,7 @@ from clmgr.args import (
 )
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
-from clmgr.processor import analyze
+from clmgr.processor import analyze, read_file
 from clmgr.template import licenses
 
 log = setup_custom_logger("root")
@@ -97,10 +97,8 @@ def main(args=sys.argv[1:]):
         for file in file_list:
             log.debug(f"Processing file: {file}")
 
-            # Read source and close it
-            src = open(file=file.absolute(), encoding="utf-8", mode="r")
-            lines = src.readlines()
-            src.close()
+            # Read source, preserving its byte order mark and line endings
+            lines = read_file(file.absolute())
 
             # Determine what would happen to this file and let the
             # handler either apply or report it
