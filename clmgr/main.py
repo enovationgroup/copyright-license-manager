@@ -16,9 +16,7 @@ from clmgr.args import (
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
 from clmgr.paths import select_files
-from clmgr.processor import analyze
 from clmgr.processor import analyze, read_file
-from clmgr.template import licenses
 
 log = setup_custom_logger("root")
 

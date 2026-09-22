@@ -14,7 +14,7 @@ log = logging.getLogger("root")
 
 
 def _detect_newline(lines, default="\n"):
-    """Determine the line ending used by a source file.
+    r"""Determine the line ending used by a source file.
 
     The first line ending in the file decides, because the header we render is
     placed at the top. Files without any line ending fall back to `default`
@@ -52,7 +52,7 @@ def _has_bom(path):
 
 
 def read_file(path):
-    """Read a source file without altering how it is encoded.
+    r"""Read a source file without altering how it is encoded.
 
     A byte order mark is consumed rather than decoded, so it cannot end up in
     the middle of the file once a header is rendered above the first line, and
