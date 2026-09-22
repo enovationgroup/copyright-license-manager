@@ -2,7 +2,6 @@
 
 import datetime
 import logging
-import filecmp
 import os
 import re
 import shutil
@@ -346,7 +345,7 @@ def render_update(cfg, ext, offset, lines, args):
     return out
 
 
-def analyze(cfg, ext, lines, args):
+def analyze(cfg, ext, lines, path, args):
     """Determine what clmgr would do with a source file, without touching it.
 
     Parameters
@@ -357,6 +356,8 @@ def analyze(cfg, ext, lines, args):
         Source file extension, used to look up the comment style
     lines
         Original file contents
+    path
+        Path of the source file, used for reporting
     args
         Parsed commandline arguments
 

@@ -15,12 +15,8 @@ from clmgr.args import (
 )
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
-from clmgr.template import licenses
 from clmgr.paths import select_files
-from clmgr.processor import (
-  analyze,
-  process_lines
-)
+from clmgr.processor import analyze
 
 log = setup_custom_logger("root")
 
@@ -71,7 +67,7 @@ def main(args=None):
 
             # Determine what would happen to this file and let the
             # handler either apply or report it
-            action, new_lines = analyze(cfg, ext, lines, args)
+            action, new_lines = analyze(cfg, ext, lines, file, args)
             handler.handle(action, file, lines, new_lines)
 
     handler.summarize()
