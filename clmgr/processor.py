@@ -2,12 +2,15 @@
 
 import codecs
 import datetime
+import logging
 import os
 import re
 import shutil
 import tempfile
 
 from clmgr.template import template, comments
+
+log = logging.getLogger("root")
 
 
 def _detect_newline(lines, default="\n"):
@@ -408,7 +411,7 @@ def render_update(cfg, ext, offset, lines, args):
     return out
 
 
-def analyze(cfg, ext, lines, args):
+def analyze(cfg, ext, lines, path, args):
     """Determine what clmgr would do with a source file, without touching it.
 
     Parameters
@@ -419,6 +422,8 @@ def analyze(cfg, ext, lines, args):
         Source file extension, used to look up the comment style
     lines
         Original file contents
+    path
+        Path of the source file, used for reporting
     args
         Parsed commandline arguments
 
@@ -456,7 +461,7 @@ def analyze(cfg, ext, lines, args):
         if new_lines != lines:
             return "update", new_lines
     except IndexError:
-        pass
+        log.warning(f"Skipping {path}, could not locate a header to work with")
 
     return "none", lines
 
