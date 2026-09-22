@@ -1,11 +1,14 @@
 """Processor functions"""
 
 import datetime
+import logging
 import filecmp
 import os
 import re
 
 from clmgr.template import template, comments
+
+log = logging.getLogger("root")
 
 
 def _find_first_non_empty_line_index(lines):
@@ -384,6 +387,6 @@ def process_lines(cfg, path, ext, lines, args):
             else:
                 utd += 1
     except IndexError:
-        pass
+        log.warning(f"Skipping {path}, could not locate a header to work with")
 
     return add, upd, utd

@@ -1,7 +1,7 @@
 import io
 import os
 import versioneer
-from setuptools import setup
+from setuptools import find_packages, setup
 
 # Package meta-data
 NAME = "clmgr"
@@ -9,7 +9,7 @@ DESCRIPTION = "Copyright License Manager"
 URL = "https://github.com/enovationgroup/copyright-license-manager"
 AUTHOR = "Enovation Group"
 EMAIL = "development@enovationgroup.com"
-REQUIRES_PYTHON = ">3.10"
+REQUIRES_PYTHON = ">=3.10"
 LICENSE = "MIT"
 
 cwd = os.path.abspath(os.path.dirname(__file__))
@@ -30,12 +30,11 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    py_modules=["clmgr"],
+    packages=find_packages(),
     entry_points={
         "console_scripts": ["clmgr=clmgr.main:main"],
     },
     install_requires=requirements,
-    include_package_data=True,
     license=LICENSE,
     classifiers=[
         # Trove classifiers
@@ -44,8 +43,11 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Operating System :: OS Independent",
     ],
     # $ setup.py publish support.
-    cmdclass={"versioneer": versioneer.get_cmdclass()},
+    cmdclass=versioneer.get_cmdclass(),
 )

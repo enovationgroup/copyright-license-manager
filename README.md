@@ -87,21 +87,41 @@ license:
 
 #### Configuration Options
 
+The `source` and `legal` options are required, every other option has a
+default. clmgr reports what is wrong and exits with `2` when the configuration
+cannot be used.
+
 ##### source
 
-A list of file extensions to process. Supported values include 'py', 'java', 'cs', 'ts'.
+A list of file extensions to process. Supported values are 'py', 'java', 'cs',
+'ts' and 'sql'.
 
 ##### include
 
-A list of glob patterns to include files for processing.
+A list of glob patterns to include files for processing. When it is left empty
+every file of a configured source extension is processed.
 
 ##### exclude
 
 A list of glob patterns to exclude files from processing.
 
+Patterns are matched against the path of a file relative to the input
+directory. A `*` matches within one directory, `**` matches across
+directories, and a pattern without a separator also matches a file name, a
+file name without its extension, or a directory anywhere in the tree:
+
+```yaml
+include:
+  - "src/**/*"      # every file under src, at any depth
+exclude:
+  - "**/*.min.js"   # minified files anywhere
+  - build           # any directory named build
+  - Generated       # any file named Generated.java, Generated.py, ...
+```
+
 ##### legal
 
-A list of legal entities associated with the copyright. Each entity can have the following properties:
+A list of legal entities associated with the copyright. Each entity must have the following properties:
 
 - inception: The year when the copyright started
 - name: The name of the copyright holder
@@ -112,7 +132,8 @@ A list of legal entities associated with the copyright. Each entity can have the
 
 The format string for each row in the copyright notice. This property is optional and by default,
 it is set to `SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]`.
-The following placeholders can be used:
+Only the following placeholders can be used, any other placeholder is reported
+as a configuration error:
 
 - inception: The year when the copyright started
 - year: The current year
@@ -122,9 +143,10 @@ The following placeholders can be used:
 
 ##### license
 
-Settings for the license notice:
+Settings for the license notice. This section is optional, when it is left out
+no license notice is managed:
 
-- enabled: Whether to include a license notice (true/false)
+- enabled: Whether to include a license notice (true/false), default false
 - external: Whether to use an external license file (true/false)
 - content: The content of the license notice (if not using an external file)
 
@@ -224,13 +246,19 @@ docker build -t clmgr:latest .
 
 `--network=host` might be needed for the container build to resolve the DNS from the host machine.
 
+The image contains a copy of the source taken at build time, so rebuild it after
+changing clmgr.
+
 Run the docker container in a project.
 
 ```shell
-docker run -v .:/work -it clmgr:latest
+docker run --rm -v .:/work -it clmgr:latest
 ```
 
 `-v .:/work` will mount the current directory to work dir in the docker container.
+
+Leave out `-t` when redirecting the output. A pseudo terminal joins `stdout` and
+`stderr` into a single stream.
 
 ## Contributing
 

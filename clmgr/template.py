@@ -46,7 +46,20 @@ comments = {
 
 licenses = {"default": "All rights reserved."}
 
+# Source extensions clmgr can process. "sh" has a comment style above, but no
+# license handling and no header implementation yet, so it is not offered.
+sources = ["cs", "java", "py", "sql", "ts"]
+
+# Placeholders a copyright format may use
+placeholders = ["inception", "year", "name", "locality", "country"]
+
 
 # format the copyright statement
 def template(copyright_format, inception, year, name, locality, country):
-    return eval(f"f'{copyright_format}'")
+    return copyright_format.format(
+        inception=inception,
+        year=year,
+        name=name,
+        locality=locality,
+        country=country,
+    )
