@@ -167,6 +167,28 @@ def _has_copyright(header_body_lines):
     return any("Copyright" in line for line in header_body_lines)
 
 
+def _candidate_styles(ext):
+    """The comment styles a header of an extension may be written in.
+
+    Returns a list of (header_style, copyright_only) tuples: the style of new
+    headers first, then the legacy styles, which only count as the header
+    when the comment holds a copyright statement.
+    """
+    comment = comments.get(ext)
+    return [(comment, False)] + [(legacy, True) for legacy in comment["legacy"]]
+
+
+def _find_comment(lines, header_style, max_region):
+    """Find the first comment of a file in one comment style"""
+    return _find_header_block(
+        lines,
+        header_style["start"],
+        header_style["end"],
+        max_region=max_region,
+        indented=header_style.get("indented", False),
+    )
+
+
 def detect_header(lines, ext, max_region=None):
     """Find the existing header of a file and the comment style it uses.
 
@@ -189,18 +211,8 @@ def detect_header(lines, ext, max_region=None):
         The header is the tuple returned by `_find_header_block`.
 
     """
-    comment = comments.get(ext)
-    candidates = [(comment, False)]
-    candidates += [(legacy, True) for legacy in comment["legacy"]]
-
-    for header_style, copyright_only in candidates:
-        header = _find_header_block(
-            lines,
-            header_style["start"],
-            header_style["end"],
-            max_region=max_region,
-            indented=header_style.get("indented", False),
-        )
+    for header_style, copyright_only in _candidate_styles(ext):
+        header = _find_comment(lines, header_style, max_region)
         if header is None:
             continue
         # The copyright may still be on the first line of the comment
@@ -294,15 +306,8 @@ def _split_header_end(line, header_style):
 
 def _leading_comment_end(lines, ext, max_region):
     """The index of the last line of the first comment, in any known style"""
-    comment = comments.get(ext)
-    for header_style in [comment] + comment["legacy"]:
-        block = _find_header_block(
-            lines,
-            header_style["start"],
-            header_style["end"],
-            max_region=max_region,
-            indented=header_style.get("indented", False),
-        )
+    for header_style, _ in _candidate_styles(ext):
+        block = _find_comment(lines, header_style, max_region)
         if block is not None:
             return block[1]
 
