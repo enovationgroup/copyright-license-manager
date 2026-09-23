@@ -7,7 +7,18 @@ import re
 SHEBANG = re.compile(r"#![^\n]*\n?")
 CHARSET = re.compile(r"@charset[^;\n]*;[^\n]*\n?")
 XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
-DOCTYPE = re.compile(r"<!(?i:doctype)[^>]*>[^\n]*\n?")
+# Whitespace is allowed in front of a doctype, it is kept above the header
+DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
+
+# Block comments that are recognised as an existing header, in files that use
+# a different comment style for new headers. They are only recognised when
+# they hold a copyright statement, so a leading pragma or documentation
+# comment is never mistaken for the header.
+C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
+
+# The indented syntax of Sass ends a /* comment at the first line that is not
+# indented, the closing */ is optional
+SASS_BLOCK = {**C_BLOCK, "indented": True}
 
 # Comment styles, shared by every source extension that uses them
 JAVA = {
@@ -26,6 +37,7 @@ CSHARP = {
     "end": " */",
     "divider": True,
     "license": {"start": "---", "end": "---"},
+    "legacy": [C_BLOCK],
 }
 
 HASH = {
@@ -53,6 +65,7 @@ BANNER = {
     "end": "****************************************************************************** */",
     "divider": False,
     "license": {"start": "---", "end": "---"},
+    "legacy": [C_BLOCK],
 }
 
 SLASH = {
@@ -62,6 +75,7 @@ SLASH = {
     "end": "//",
     "divider": False,
     "license": {"start": "---", "end": "---"},
+    "legacy": [SASS_BLOCK],
 }
 
 # XML based markup does not allow "--" inside a comment, so the license
@@ -97,6 +111,7 @@ def style(comment_style, prologue=()):
     return {
         **comment_style,
         "license": dict(comment_style["license"]),
+        "legacy": [dict(legacy) for legacy in comment_style.get("legacy", [])],
         "prologue": list(prologue),
     }
 

@@ -199,7 +199,9 @@ All rights reserved.
 ```
 
 Markup comments use `===` around the license, because XML based markup does
-not allow `--` inside a comment:
+not allow `--` inside a comment. For the same reason clmgr reports a
+configuration error when the copyright statements or the license content
+contain `--` while a markup source is configured:
 
 ```html
 <!--
@@ -211,8 +213,14 @@ not allow `--` inside a comment:
 ```
 
 Lines that must stay at the top of a file are left in place and the header is
-placed below them: a shebang (`#!`) in JavaScript, a `@charset` rule in
-stylesheets, and an XML declaration or doctype in HTML.
+placed below them: a shebang (`#!`) in JavaScript and TypeScript, a `@charset`
+rule in stylesheets, and an XML declaration or doctype in HTML. A byte order
+mark always stays in front of the file.
+
+An existing `/* */` header that holds a copyright statement is updated in
+place, even when new headers of that file type use a different comment style.
+Any other leading comment, such as an `eslint-disable` pragma, is left alone
+and the header is added above it.
 
 ##### include
 

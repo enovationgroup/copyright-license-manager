@@ -54,10 +54,22 @@ def test_prologue_not_configured():
     assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
 
 
-def test_prologue_only_at_start_of_file():
+def test_prologue_doctype_after_blank_line():
     lines = ["\n", "<!DOCTYPE html>\n", "<html>\n"]
 
-    assert count_prologue_lines(lines, comments["html"]["prologue"]) == 0
+    assert count_prologue_lines(lines, comments["html"]["prologue"]) == 2
+
+
+def test_prologue_only_at_start_of_file():
+    lines = ["\n", "#!/usr/bin/env node\n", "foo();\n"]
+
+    assert count_prologue_lines(lines, comments["js"]["prologue"]) == 0
+
+
+def test_prologue_matched_once():
+    lines = ['@charset "UTF-8";\n', '@charset "UTF-8";\n', ".a {}\n"]
+
+    assert count_prologue_lines(lines, comments["css"]["prologue"]) == 1
 
 
 def test_prologue_multi_line_doctype():
