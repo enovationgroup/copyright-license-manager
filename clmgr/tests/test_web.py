@@ -127,3 +127,9 @@ def test_comment_styles_do_not_share_state():
             assert comment is not other
             assert comment["license"] is not other["license"]
             assert comment["prologue"] is not other["prologue"]
+
+
+def test_markup_styles():
+    markup = {ext for ext, comment in comments.items() if comment["markup"]}
+
+    assert markup == {"html", "htm", "vue", "svelte"}

@@ -229,7 +229,7 @@ def validate_markup(cfg):
     copyright statements nor the license content may contain it when a markup
     source is configured.
     """
-    markup = [ext for ext in cfg["source"] if comments[ext]["start"] == "<!--"]
+    markup = [ext for ext in cfg["source"] if comments[ext]["markup"]]
     if not markup:
         return []
 

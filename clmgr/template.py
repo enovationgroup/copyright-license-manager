@@ -11,7 +11,9 @@ XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
 DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
 
 # Block comments that are recognised as an existing header, in files that use
-# a different comment style for new headers. They are only recognised when
+# a different comment style for new headers. They only describe how to find a
+# header, so they have no license or divider settings and are not passed to
+# style(). They are only recognised when
 # they hold a copyright statement, so a leading pragma or documentation
 # comment is never mistaken for the header.
 C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
@@ -68,7 +70,7 @@ BANNER = {
     "legacy": [C_BLOCK],
 }
 
-SLASH = {
+SASS = {
     "start": "//",
     "char": "//",
     "line": "// ",
@@ -87,6 +89,7 @@ MARKUP = {
     "end": "-->",
     "divider": False,
     "license": {"start": "===", "end": "==="},
+    "markup": True,
 }
 
 
@@ -99,7 +102,8 @@ def style(comment_style, prologue=()):
     Parameters
     ----------
     comment_style
-        One of the comment styles above
+        One of the comment styles above that new headers are written in,
+        so not C_BLOCK or SASS_BLOCK
     prologue
         Patterns of the lines that must stay above the header
 
@@ -109,6 +113,7 @@ def style(comment_style, prologue=()):
 
     """
     return {
+        "markup": False,
         **comment_style,
         "license": dict(comment_style["license"]),
         "legacy": [dict(legacy) for legacy in comment_style.get("legacy", [])],
@@ -134,7 +139,7 @@ comments = {
     "less": style(BANNER, [CHARSET]),
     # The indented syntax ends a /* comment at the first line that is not
     # indented, so it can only use line comments.
-    "sass": style(SLASH, [CHARSET]),
+    "sass": style(SASS, [CHARSET]),
     # Markup
     "html": style(MARKUP, [XML_DECLARATION, DOCTYPE]),
     "htm": style(MARKUP, [XML_DECLARATION, DOCTYPE]),

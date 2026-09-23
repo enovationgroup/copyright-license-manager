@@ -44,5 +44,8 @@ def test_second_run_changes_nothing(path):
     directory = os.path.relpath(path, test_dir + "/output").split(os.sep)[0]
     name = scenario(path)
     config = f"{test_dir}/config/{directory}/{CONFIGS.get(name, name)}.yml"
+    assert os.path.exists(
+        config
+    ), f"no configuration for scenario '{name}', add it to CONFIGS"
 
     assert main(["-c", config, "--file", path, "--check"]) == 0
