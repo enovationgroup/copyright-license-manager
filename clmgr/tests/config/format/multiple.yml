@@ -5,6 +5,19 @@ source:
   - cs
   - py
   - sql
+  - js
+  - mjs
+  - cjs
+  - jsx
+  - tsx
+  - css
+  - scss
+  - less
+  - sass
+  - html
+  - htm
+  - vue
+  - svelte
 legal:
   - inception: 2015
     name: Enovation B.V.

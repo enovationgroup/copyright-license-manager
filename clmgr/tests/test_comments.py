@@ -39,3 +39,43 @@ def test_format_comments_dotnet():
 
 def test_format_comments_sql():
     run_test_config("format/sql/", "comments.sql", "format/comments.yml")
+
+
+def test_comments_javascript():
+    run_test_config("default/js/", "comments.js", "default/comments.yml")
+
+
+def test_comments_css():
+    run_test_config("default/css/", "comments.css", "default/comments.yml")
+
+
+def test_comments_scss():
+    run_test_config("default/scss/", "comments.scss", "default/comments.yml")
+
+
+def test_comments_sass():
+    run_test_config("default/sass/", "comments.sass", "default/comments.yml")
+
+
+def test_comments_html():
+    run_test_config("default/html/", "comments.html", "default/comments.yml")
+
+
+def test_format_comments_javascript():
+    run_test_config("format/js/", "comments.js", "format/comments.yml")
+
+
+def test_format_comments_css():
+    run_test_config("format/css/", "comments.css", "format/comments.yml")
+
+
+def test_format_comments_scss():
+    run_test_config("format/scss/", "comments.scss", "format/comments.yml")
+
+
+def test_format_comments_sass():
+    run_test_config("format/sass/", "comments.sass", "format/comments.yml")
+
+
+def test_format_comments_html():
+    run_test_config("format/html/", "comments.html", "format/comments.yml")

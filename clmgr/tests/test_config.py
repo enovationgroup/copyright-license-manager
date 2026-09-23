@@ -71,7 +71,7 @@ def test_config_with_empty_source(tmp_path, caplog):
 
 def test_config_with_unsupported_source(tmp_path, caplog):
     assert_rejected(
-        tmp_path, "source:\n  - js\n" + VALID_LEGAL, "is not supported", caplog
+        tmp_path, "source:\n  - json\n" + VALID_LEGAL, "is not supported", caplog
     )
 
 
@@ -87,7 +87,7 @@ def test_config_with_incomplete_legal_entity(tmp_path, caplog):
 def test_config_reports_every_problem(tmp_path, caplog):
     assert_rejected(
         tmp_path,
-        "source:\n  - js\nlegal:\n  - name: Enovation Group B.V.\n",
+        "source:\n  - json\nlegal:\n  - name: Enovation Group B.V.\n",
         "is not supported",
         caplog,
     )

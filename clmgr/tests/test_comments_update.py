@@ -41,3 +41,43 @@ def test_format_comments_update_dotnet():
 
 def test_format_comments_update_sql():
     run_test_config("format/sql/", "comments-update.sql", "format/comments.yml")
+
+
+def test_comments_update_javascript():
+    run_test_config("default/js/", "comments-update.js", "default/comments.yml")
+
+
+def test_comments_update_css():
+    run_test_config("default/css/", "comments-update.css", "default/comments.yml")
+
+
+def test_comments_update_scss():
+    run_test_config("default/scss/", "comments-update.scss", "default/comments.yml")
+
+
+def test_comments_update_sass():
+    run_test_config("default/sass/", "comments-update.sass", "default/comments.yml")
+
+
+def test_comments_update_html():
+    run_test_config("default/html/", "comments-update.html", "default/comments.yml")
+
+
+def test_format_comments_update_javascript():
+    run_test_config("format/js/", "comments-update.js", "format/comments.yml")
+
+
+def test_format_comments_update_css():
+    run_test_config("format/css/", "comments-update.css", "format/comments.yml")
+
+
+def test_format_comments_update_scss():
+    run_test_config("format/scss/", "comments-update.scss", "format/comments.yml")
+
+
+def test_format_comments_update_sass():
+    run_test_config("format/sass/", "comments-update.sass", "format/comments.yml")
+
+
+def test_format_comments_update_html():
+    run_test_config("format/html/", "comments-update.html", "format/comments.yml")

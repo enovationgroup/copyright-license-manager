@@ -24,7 +24,11 @@ Current supported languages
 - C#
 - Java
 - Python
+- SQL
 - TypeScript
+- JavaScript (`js`, `mjs`, `cjs`, `jsx`, `tsx`)
+- Stylesheets (`css`, `scss`, `sass`, `less`)
+- Markup (`html`, `htm`, `vue`, `svelte`)
 
 ## Usage
 
@@ -164,7 +168,51 @@ cannot be used.
 ##### source
 
 A list of file extensions to process. Supported values are 'py', 'java', 'cs',
-'ts' and 'sql'.
+'ts', 'sql', 'js', 'mjs', 'cjs', 'jsx', 'tsx', 'css', 'scss', 'sass', 'less',
+'html', 'htm', 'vue' and 'svelte'.
+
+JSON has no comments, so a copyright header cannot be added to it. Minified
+files are usually generated and are best left out with an `exclude` pattern
+such as `**/*.min.*`.
+
+The comment style of the header depends on the file type:
+
+| Extensions                             | Header                                            |
+| -------------------------------------- | ------------------------------------------------- |
+| `ts`, `js`, `mjs`, `cjs`, `jsx`, `tsx` | `/*! ... */` banner                               |
+| `css`, `scss`, `less`                  | `/*! ... */` banner                               |
+| `sass`                                 | `//` line comments                                |
+| `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
+
+The `/*!` banner is kept by minifiers such as terser, esbuild, cssnano and the
+compressed output of Sass, so the notice ends up in the shipped files as well.
+The indented Sass syntax only supports line comments for a header, which are
+not written to the compiled CSS.
+
+```scss
+/*! *****************************************************************************
+SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+---
+All rights reserved.
+---
+****************************************************************************** */
+```
+
+Markup comments use `===` around the license, because XML based markup does
+not allow `--` inside a comment:
+
+```html
+<!--
+  SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+  ===
+  All rights reserved.
+  ===
+-->
+```
+
+Lines that must stay at the top of a file are left in place and the header is
+placed below them: a shebang (`#!`) in JavaScript, a `@charset` rule in
+stylesheets, and an XML declaration or doctype in HTML.
 
 ##### include
 

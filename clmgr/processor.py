@@ -19,6 +19,48 @@ def _find_first_non_empty_line_index(lines):
     return None
 
 
+def count_prologue_lines(lines, prologue):
+    """Count the leading lines that must stay above the copyright header.
+
+    Some files have to start with a specific construct, such as a shebang,
+    a CSS `@charset` rule or an HTML doctype. Those lines are left in place
+    and the header is placed below them.
+
+    Parameters
+    ----------
+    lines
+        Original file contents
+    prologue
+        Compiled patterns of the constructs that must stay on top, each one
+        consuming whole lines
+
+    Returns
+    -------
+        The number of leading lines that belong to the prologue
+
+    """
+    if not prologue:
+        return 0
+
+    text = "".join(lines)
+    pos = 0
+    matched = True
+    while matched:
+        matched = False
+        for pattern in prologue:
+            match = pattern.match(text, pos)
+            if match and match.end() > pos:
+                pos = match.end()
+                matched = True
+
+    consumed = text[:pos]
+    count = consumed.count("\n")
+    if consumed and not consumed.endswith("\n"):
+        count += 1
+
+    return count
+
+
 def _infer_line_prefix_from_header_body(header_body_lines, char, fallback_line_prefix):
     """Infer the line prefix for comment body lines from an existing header.
 
@@ -137,6 +179,11 @@ def render_insert(cfg, ext, offset, lines):
     """
     out = lines[:offset]
     lines = lines[offset:]
+
+    # A prologue on the last line of a file has no line ending to separate it
+    # from the header that follows
+    if out and not out[-1].endswith("\n"):
+        out[-1] += "\n"
 
     start = comments.get(ext).get("start")
     char = comments.get(ext).get("char")
@@ -367,13 +414,9 @@ def analyze(cfg, ext, lines, path, args):
         "none". For "none" the returned contents are the original contents.
 
     """
-    offset = 0
-
     try:
-        # Shell
-        # TODO: Implementation
-        if ext.lower() == "sh":
-            offset = 1
+        # Lines such as a shebang or doctype must stay at the top of the file
+        offset = count_prologue_lines(lines, comments.get(ext).get("prologue"))
 
         # Determine insert vs update by scanning the header block rather than
         # relying on a fixed line index (SQL and indented headers break that).

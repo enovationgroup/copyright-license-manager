@@ -43,3 +43,43 @@ def test_format_single_update_dotnet():
 
 def test_format_single_update_sql():
     run_test_config("format/sql/", "single-update.sql", "format/single.update.yml")
+
+
+def test_single_update_javascript():
+    run_test_config("default/js/", "single-update.js", "default/single.update.yml")
+
+
+def test_single_update_css():
+    run_test_config("default/css/", "single-update.css", "default/single.update.yml")
+
+
+def test_single_update_scss():
+    run_test_config("default/scss/", "single-update.scss", "default/single.update.yml")
+
+
+def test_single_update_sass():
+    run_test_config("default/sass/", "single-update.sass", "default/single.update.yml")
+
+
+def test_single_update_html():
+    run_test_config("default/html/", "single-update.html", "default/single.update.yml")
+
+
+def test_format_single_update_javascript():
+    run_test_config("format/js/", "single-update.js", "format/single.update.yml")
+
+
+def test_format_single_update_css():
+    run_test_config("format/css/", "single-update.css", "format/single.update.yml")
+
+
+def test_format_single_update_scss():
+    run_test_config("format/scss/", "single-update.scss", "format/single.update.yml")
+
+
+def test_format_single_update_sass():
+    run_test_config("format/sass/", "single-update.sass", "format/single.update.yml")
+
+
+def test_format_single_update_html():
+    run_test_config("format/html/", "single-update.html", "format/single.update.yml")
