@@ -71,6 +71,10 @@ def matches(patterns, path):
     a short pattern such as `build` or `Generated` working the way it reads,
     without it having to spell out the full path.
 
+    A pattern starting with a `/` is anchored to the input directory, as in a
+    `.gitignore` file: it only matches the whole relative path, so `/build`
+    matches the top level build directory only.
+
     Parameters
     ----------
     patterns
@@ -90,6 +94,12 @@ def matches(patterns, path):
     candidates = [pure.as_posix(), pure.name, pure.stem] + list(pure.parts)
 
     for pattern in patterns:
+        if pattern.startswith("/"):
+            regex = compile_glob(pattern.lstrip("/"))
+            if regex.match(candidates[0]):
+                return True
+            continue
+
         regex = compile_glob(pattern)
         if any(regex.match(candidate) for candidate in candidates):
             return True

@@ -238,7 +238,9 @@ A list of glob patterns to exclude files from processing.
 Patterns are matched against the path of a file relative to the input
 directory. A `*` matches within one directory, `**` matches across
 directories, and a pattern without a separator also matches a file name, a
-file name without its extension, or a directory anywhere in the tree:
+file name without its extension, or a directory anywhere in the tree. A
+pattern starting with a `/` is anchored to the input directory, as in a
+`.gitignore` file:
 
 ```yaml
 include:
@@ -247,6 +249,7 @@ exclude:
   - "**/*.min.js"   # minified files anywhere
   - build           # any directory named build
   - Generated       # any file named Generated.java, Generated.py, ...
+  - /dist           # only the dist directory at the top of the input directory
 ```
 
 ##### legal
