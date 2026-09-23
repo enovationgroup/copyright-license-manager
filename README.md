@@ -127,6 +127,31 @@ It never writes to the working tree, so it is safe to run on any checkout.
   run: clmgr --check --diff
 ```
 
+### Build output
+
+clmgr manages the headers of source files. Do not run it on build output, such
+as the bundles of an Angular, React or Vue application: those files are
+generated again on every build. Leave the build directory out with an
+`exclude` pattern such as `/dist`.
+
+The headers of the source files do not reliably end up in the bundles:
+
+- Angular moves license comments to `3rdpartylicenses.txt` when
+  `extractLicenses` is enabled, which is the default for production builds
+- The terser plugin of webpack moves them to a separate `*.LICENSE.txt` file
+  by default
+- Where they are kept, a bundle contains the same header once for every source
+  file it is built from
+
+To show a copyright notice in the files that are deployed, let the build tool
+add a single banner to every bundle, for example with the `BannerPlugin` of
+webpack, the `output.banner` option of Rollup and Vite, or the `banner` option
+of esbuild. Angular CLI has no banner option, so it needs a post-build step or
+a custom builder.
+
+Keep the extraction of third party licenses enabled as well: most open source
+licenses require their notices to be distributed with the application.
+
 ## Configuration
 
 ### Configuration File
@@ -184,10 +209,11 @@ The comment style of the header depends on the file type:
 | `sass`                                 | `//` line comments                                |
 | `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
 
-The `/*!` banner is kept by minifiers such as terser, esbuild, cssnano and the
-compressed output of Sass, so the notice ends up in the shipped files as well.
-The indented Sass syntax only supports line comments for a header, which are
-not written to the compiled CSS.
+Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
+keep `/*!` comments by default, but a build tool may still move them to a
+separate file or leave them out. See [Build output](#build-output). The
+indented Sass syntax only supports line comments for a header, which are not
+written to the compiled CSS.
 
 ```scss
 /*! *****************************************************************************
