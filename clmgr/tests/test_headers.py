@@ -162,6 +162,20 @@ def test_copyright_on_first_line_of_line_comments():
     assert text == f"# {SPDX}\n# ---\n# All rights reserved.\n# ---\n# note\nprint(1)\n"
 
 
+def test_copyright_as_only_line_of_line_comments():
+    action, text = run("py", "# Copyright (c) 2015 Enovation\nprint(1)\n")
+
+    assert action == "update"
+    assert text == f"# {SPDX}\n# ---\n# All rights reserved.\n# ---\nprint(1)\n"
+
+
+def test_copyright_as_only_line_of_line_comments_sass():
+    action, text = run("sass", "// Copyright (c) 2015 Enovation\n.a\n  b: c\n")
+
+    assert action == "update"
+    assert text == (f"// {SPDX}\n// ---\n// All rights reserved.\n// ---\n.a\n  b: c\n")
+
+
 def test_copyright_below_first_comment_is_reported(caplog):
     action, text = run(
         "js", "/* eslint-disable */\n/* Copyright (c) 2015 Enovation */\nfoo();\n"
