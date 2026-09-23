@@ -13,9 +13,10 @@ from clmgr.args import (
     read_config,
     validate_config,
 )
+from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
 from clmgr.paths import select_files
-from clmgr.processor import process_lines
+from clmgr.processor import analyze
 
 log = setup_custom_logger("root")
 
@@ -37,15 +38,15 @@ def main(args=None):
     cfg = apply_config_defaults(cfg)
     log.debug(f"Configuration: \n{pformat(cfg, indent=2)}")
 
+    # A dry run reports the changes, any other run applies them
+    handler = create_handler(args)
+
     # Process Input
     # Input can be one of the following:
     #  * file
     #  * directory
     # however please note that the configuration must always be provided either present from
     # the current working directory or through the flag -c, --config
-    add = 0
-    upd = 0
-    utd = 0
 
     for ext in cfg["source"]:
         if args.file is not None:
@@ -57,19 +58,18 @@ def main(args=None):
             file_list = select_files(input_dir, ext, cfg["include"], cfg["exclude"])
 
         for file in file_list:
-            log.info(f"Processing file: {file}")
+            log.debug(f"Processing file: {file}")
 
             # Read source and close it
             src = open(file=file.absolute(), encoding="utf-8", mode="r")
             lines = src.readlines()
             src.close()
 
-            # Process file
-            res = process_lines(cfg, file, ext, lines, args)
-            add += res[0]
-            upd += res[1]
-            utd += res[2]
+            # Determine what would happen to this file and let the
+            # handler either apply or report it
+            action, new_lines = analyze(cfg, ext, lines, file, args)
+            handler.handle(action, file, lines, new_lines)
 
-    print(f"[{add}] Copyright added")
-    print(f"[{upd}] Copyright updated")
-    print(f"[{utd}] Copyright up to date")
+    handler.summarize()
+
+    return handler.exit_code()
