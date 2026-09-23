@@ -8,7 +8,7 @@ import sys
 import yaml
 
 from clmgr.__version__ import get_versions
-from clmgr.template import licenses, placeholders, sources
+from clmgr.template import comments, licenses, placeholders, sources, template
 
 log = logging.getLogger("root")
 
@@ -17,6 +17,11 @@ REQUIRED_OPTIONS = ["source", "legal"]
 
 # Properties every entry of the legal option must define
 REQUIRED_LEGAL_PROPERTIES = ["inception", "name", "locality", "country"]
+
+DEFAULT_FORMAT = (
+    "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
+    "[{name} - {locality} - {country}]"
+)
 
 
 def parse_args(args):
@@ -178,6 +183,9 @@ def validate_config(cfg, config_file):
         errors.extend(validate_legal(cfg["legal"]))
         errors.extend(validate_format(cfg.get("format")))
 
+    if not errors:
+        errors.extend(validate_markup(cfg))
+
     if errors:
         for error in errors:
             log.error(f"Configuration {config_file}: {error}")
@@ -212,6 +220,44 @@ def validate_format(copyright_format):
         for name in used
         if name not in placeholders
     ]
+
+
+def validate_markup(cfg):
+    """Verify that the header text can be written into a markup comment
+
+    A markup comment such as <!-- --> must not contain "--", so neither the
+    copyright statements nor the license content may contain it when a markup
+    source is configured.
+    """
+    markup = [ext for ext in cfg["source"] if comments[ext]["markup"]]
+    if not markup:
+        return []
+
+    errors = []
+    copyright_format = cfg.get("format") or DEFAULT_FORMAT
+    for idx, entity in enumerate(cfg["legal"]):
+        statement = template(
+            copyright_format,
+            entity["inception"],
+            entity["inception"],
+            entity["name"],
+            entity["locality"],
+            entity["country"],
+        )
+        if "--" in statement:
+            errors.append(
+                f"copyright of legal entity [{idx}] contains '--', "
+                f"which is not allowed in {', '.join(markup)} comments"
+            )
+
+    license_cfg = cfg.get("license")
+    if isinstance(license_cfg, dict) and "--" in str(license_cfg.get("content", "")):
+        errors.append(
+            f"license content contains '--', "
+            f"which is not allowed in {', '.join(markup)} comments"
+        )
+
+    return errors
 
 
 def validate_legal(legal):
@@ -256,9 +302,6 @@ def apply_config_defaults(cfg):
         if cfg["license"].get("content") is None:
             cfg["license"]["content"] = licenses.get("default")
     if cfg.get("format") is None:
-        cfg["format"] = (
-            "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
-            "[{name} - {locality} - {country}]"
-        )
+        cfg["format"] = DEFAULT_FORMAT
 
     return cfg

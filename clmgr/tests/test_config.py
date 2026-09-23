@@ -71,7 +71,7 @@ def test_config_with_empty_source(tmp_path, caplog):
 
 def test_config_with_unsupported_source(tmp_path, caplog):
     assert_rejected(
-        tmp_path, "source:\n  - js\n" + VALID_LEGAL, "is not supported", caplog
+        tmp_path, "source:\n  - json\n" + VALID_LEGAL, "is not supported", caplog
     )
 
 
@@ -87,7 +87,7 @@ def test_config_with_incomplete_legal_entity(tmp_path, caplog):
 def test_config_reports_every_problem(tmp_path, caplog):
     assert_rejected(
         tmp_path,
-        "source:\n  - js\nlegal:\n  - name: Enovation Group B.V.\n",
+        "source:\n  - json\nlegal:\n  - name: Enovation Group B.V.\n",
         "is not supported",
         caplog,
     )
@@ -135,3 +135,30 @@ def test_defaults_do_not_overwrite_configured_options():
     assert cfg["format"] == "Copyright {year}"
     assert cfg["license"]["content"] == "Custom"
     assert cfg["license"]["external"] is False
+
+
+def test_config_with_double_dash_in_markup_copyright(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\nformat: 'Copyright -- {name}'\n" + VALID_LEGAL,
+        "copyright of legal entity [0] contains '--'",
+        caplog,
+    )
+
+
+def test_config_with_double_dash_in_markup_license(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - vue\nlicense:\n  enabled: true\n  content: A -- B\n"
+        + VALID_LEGAL,
+        "license content contains '--'",
+        caplog,
+    )
+
+
+def test_config_with_double_dash_without_markup(tmp_path):
+    config_file = write_config(
+        tmp_path, "source:\n  - py\nformat: 'Copyright -- {name}'\n" + VALID_LEGAL
+    )
+
+    validate_config(read_config(config_file), config_file)

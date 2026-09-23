@@ -1,0 +1,10 @@
+/*! *****************************************************************************
+Copyright (c) 2015 - 2018 [Enovation B.V. - Capelle aan den IJssel]
+Copyright (c) 2018 - 2026 [Enovation Group B.V. - Capelle aan den IJssel]
+---
+All rights reserved.
+---
+****************************************************************************** */
+export function multiple() {
+    console.log('Copyright test multiple');
+}

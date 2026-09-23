@@ -24,7 +24,11 @@ Current supported languages
 - C#
 - Java
 - Python
+- SQL
 - TypeScript
+- JavaScript (`js`, `mjs`, `cjs`, `jsx`, `tsx`)
+- Stylesheets (`css`, `scss`, `sass`, `less`)
+- Markup (`html`, `htm`, `vue`, `svelte`)
 
 ## Usage
 
@@ -123,6 +127,31 @@ It never writes to the working tree, so it is safe to run on any checkout.
   run: clmgr --check --diff
 ```
 
+### Build output
+
+clmgr manages the headers of source files. Do not run it on build output, such
+as the bundles of an Angular, React or Vue application: those files are
+generated again on every build. Leave the build directory out with an
+`exclude` pattern such as `/dist`.
+
+The headers of the source files do not reliably end up in the bundles:
+
+- Angular moves license comments to `3rdpartylicenses.txt` when
+  `extractLicenses` is enabled, which is the default for production builds
+- The terser plugin of webpack moves them to a separate `*.LICENSE.txt` file
+  by default
+- Where they are kept, a bundle contains the same header once for every source
+  file it is built from
+
+To show a copyright notice in the files that are deployed, let the build tool
+add a single banner to every bundle, for example with the `BannerPlugin` of
+webpack, the `output.banner` option of Rollup and Vite, or the `banner` option
+of esbuild. Angular CLI has no banner option, so it needs a post-build step or
+a custom builder.
+
+Keep the extraction of third party licenses enabled as well: most open source
+licenses require their notices to be distributed with the application.
+
 ## Configuration
 
 ### Configuration File
@@ -164,7 +193,64 @@ cannot be used.
 ##### source
 
 A list of file extensions to process. Supported values are 'py', 'java', 'cs',
-'ts' and 'sql'.
+'ts', 'sql', 'js', 'mjs', 'cjs', 'jsx', 'tsx', 'css', 'scss', 'sass', 'less',
+'html', 'htm', 'vue' and 'svelte'.
+
+JSON has no comments, so a copyright header cannot be added to it. Minified
+files are usually generated and are best left out with an `exclude` pattern
+such as `**/*.min.*`.
+
+The comment style of the header depends on the file type:
+
+| Extensions                             | Header                                            |
+| -------------------------------------- | ------------------------------------------------- |
+| `ts`, `js`, `mjs`, `cjs`, `jsx`, `tsx` | `/*! ... */` banner                               |
+| `css`, `scss`, `less`                  | `/*! ... */` banner                               |
+| `sass`                                 | `//` line comments                                |
+| `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
+
+Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
+keep `/*!` comments by default, but a build tool may still move them to a
+separate file or leave them out. See [Build output](#build-output). The
+indented Sass syntax only supports line comments for a header, which are not
+written to the compiled CSS.
+
+```scss
+/*! *****************************************************************************
+SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+---
+All rights reserved.
+---
+****************************************************************************** */
+```
+
+Markup comments use `===` around the license, because XML based markup does
+not allow `--` inside a comment. For the same reason clmgr reports a
+configuration error when the copyright statements or the license content
+contain `--` while a markup source is configured:
+
+```html
+<!--
+  SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+  ===
+  All rights reserved.
+  ===
+-->
+```
+
+Lines that must stay at the top of a file are left in place and the header is
+placed below them: a shebang (`#!`) in JavaScript and TypeScript, a `@charset`
+rule in stylesheets, and an XML declaration or doctype in HTML. A byte order
+mark always stays in front of the file.
+
+An existing `/* */` header that holds a copyright statement is updated in
+place, even when new headers of that file type use a different comment style.
+Any other leading comment, such as an `eslint-disable` pragma, is left alone
+and the header is added above it.
+
+Only the first comment of a file can be the header. When a copyright statement
+is found in a comment below it, clmgr adds a new header and logs a warning, so
+the old statement can be removed by hand.
 
 ##### include
 
@@ -178,7 +264,9 @@ A list of glob patterns to exclude files from processing.
 Patterns are matched against the path of a file relative to the input
 directory. A `*` matches within one directory, `**` matches across
 directories, and a pattern without a separator also matches a file name, a
-file name without its extension, or a directory anywhere in the tree:
+file name without its extension, or a directory anywhere in the tree. A
+pattern starting with a `/` is anchored to the input directory, as in a
+`.gitignore` file:
 
 ```yaml
 include:
@@ -187,6 +275,7 @@ exclude:
   - "**/*.min.js"   # minified files anywhere
   - build           # any directory named build
   - Generated       # any file named Generated.java, Generated.py, ...
+  - /dist           # only the dist directory at the top of the input directory
 ```
 
 ##### legal

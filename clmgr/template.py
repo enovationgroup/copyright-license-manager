@@ -1,54 +1,156 @@
 """Template functions"""
 
+import re
+
+# Lines that must stay at the very top of a file, above the copyright header.
+# Every pattern consumes whole lines, starting at the beginning of a line.
+SHEBANG = re.compile(r"#![^\n]*\n?")
+CHARSET = re.compile(r"@charset[^;\n]*;[^\n]*\n?")
+XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
+# Whitespace is allowed in front of a doctype, it is kept above the header
+DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
+
+# Block comments that are recognised as an existing header, in files that use
+# a different comment style for new headers. They only describe how to find a
+# header, so they have no license or divider settings and are not passed to
+# style(). They are only recognised when
+# they hold a copyright statement, so a leading pragma or documentation
+# comment is never mistaken for the header.
+C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
+
+# The indented syntax of Sass ends a /* comment at the first line that is not
+# indented, the closing */ is optional
+SASS_BLOCK = {**C_BLOCK, "indented": True}
+
+# Comment styles, shared by every source extension that uses them
+JAVA = {
+    "start": "/*",
+    "char": "*",
+    "line": " * ",
+    "end": " */",
+    "divider": True,
+    "license": {"start": "---", "end": "---"},
+}
+
+CSHARP = {
+    "start": "/*************************************************************************",
+    "char": "*",
+    "line": " * ",
+    "end": " */",
+    "divider": True,
+    "license": {"start": "---", "end": "---"},
+    "legacy": [C_BLOCK],
+}
+
+HASH = {
+    "start": "#",
+    "char": "#",
+    "line": "# ",
+    "end": "#",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+}
+
+SQL = {
+    "start": "/*",
+    "char": "",
+    "line": "  ",
+    "end": "*/",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+}
+
+BANNER = {
+    "start": "/*! *****************************************************************************",
+    "char": "*",
+    "line": "",
+    "end": "****************************************************************************** */",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+    "legacy": [C_BLOCK],
+}
+
+SASS = {
+    "start": "//",
+    "char": "//",
+    "line": "// ",
+    "end": "//",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+    "legacy": [SASS_BLOCK],
+}
+
+# XML based markup does not allow "--" inside a comment, so the license
+# markers use "===" to keep the header valid for every markup flavour.
+MARKUP = {
+    "start": "<!--",
+    "char": "",
+    "line": "  ",
+    "end": "-->",
+    "divider": False,
+    "license": {"start": "===", "end": "==="},
+    "markup": True,
+}
+
+
+def style(comment_style, prologue=()):
+    """Create the comment configuration of a source extension
+
+    Every extension gets its own copy, so changing one of them can never
+    affect another extension that shares the same comment style.
+
+    Parameters
+    ----------
+    comment_style
+        One of the comment styles above that new headers are written in,
+        so not C_BLOCK or SASS_BLOCK
+    prologue
+        Patterns of the lines that must stay above the header
+
+    Returns
+    -------
+        The comment configuration of the extension
+
+    """
+    return {
+        "markup": False,
+        **comment_style,
+        "license": dict(comment_style["license"]),
+        "legacy": [dict(legacy) for legacy in comment_style.get("legacy", [])],
+        "prologue": list(prologue),
+    }
+
+
 comments = {
-    "java": {
-        "start": "/*",
-        "char": "*",
-        "line": " * ",
-        "end": " */",
-        "divider": True,
-        "license": {"start": "---", "end": "---"},
-    },
-    "ts": {
-        "start": "/*! *****************************************************************************",
-        "char": "*",
-        "line": "",
-        "end": "****************************************************************************** */",
-        "divider": False,
-        "license": {"start": "---", "end": "---"},
-    },
-    "cs": {
-        "start": "/*************************************************************************",
-        "char": "*",
-        "line": " * ",
-        "end": " */",
-        "divider": True,
-        "license": {"start": "---", "end": "---"},
-    },
-    "py": {
-        "start": "#",
-        "char": "#",
-        "line": "# ",
-        "end": "#",
-        "divider": False,
-        "license": {"start": "---", "end": "---"},
-    },
-    "sh": {"start": "#", "char": "#", "line": "#", "end": "#"},
-    "sql": {
-        "start": "/*",
-        "char": "",
-        "line": "  ",
-        "end": "*/",
-        "divider": False,
-        "license": {"start": "---", "end": "---"},
-    },
+    "java": style(JAVA),
+    "ts": style(BANNER, [SHEBANG]),
+    "cs": style(CSHARP),
+    "py": style(HASH),
+    "sql": style(SQL),
+    # JavaScript
+    "js": style(BANNER, [SHEBANG]),
+    "mjs": style(BANNER, [SHEBANG]),
+    "cjs": style(BANNER, [SHEBANG]),
+    "jsx": style(BANNER),
+    "tsx": style(BANNER),
+    # Stylesheets
+    "css": style(BANNER, [CHARSET]),
+    "scss": style(BANNER, [CHARSET]),
+    "less": style(BANNER, [CHARSET]),
+    # The indented syntax ends a /* comment at the first line that is not
+    # indented, so it can only use line comments.
+    "sass": style(SASS, [CHARSET]),
+    # Markup
+    "html": style(MARKUP, [XML_DECLARATION, DOCTYPE]),
+    "htm": style(MARKUP, [XML_DECLARATION, DOCTYPE]),
+    "vue": style(MARKUP),
+    "svelte": style(MARKUP),
 }
 
 licenses = {"default": "All rights reserved."}
 
-# Source extensions clmgr can process. "sh" has a comment style above, but no
-# license handling and no header implementation yet, so it is not offered.
-sources = ["cs", "java", "py", "sql", "ts"]
+# Source extensions clmgr can process
+sources = list(comments)
 
 # Placeholders a copyright format may use
 placeholders = ["inception", "year", "name", "locality", "country"]

@@ -51,6 +51,18 @@ def test_a_character_class_is_supported():
     assert not matches(["main.[ch]"], "main.o")
 
 
+def test_a_leading_slash_anchors_to_the_input_directory():
+    assert matches(["/**/Borrowed.java"], "Borrowed.java")
+    assert matches(["/**/Borrowed.java"], "api/src/main/java/io/Borrowed.java")
+    assert matches(["/src/main.py"], "src/main.py")
+    assert not matches(["/main.py"], "src/main.py")
+
+
+def test_a_leading_slash_matches_a_top_level_directory_only():
+    assert matches(["/build"], "build")
+    assert not matches(["/build"], "a/build")
+
+
 def build_tree(tmp_path):
     for path in ["src/a.py", "src/deep/b.py", "src/a.txt", "other/c.py", "build/d.py"]:
         target = tmp_path / path
@@ -99,3 +111,28 @@ def test_select_files_does_not_descend_into_an_excluded_directory(tmp_path):
         "other/c.py",
         "src/a.py",
     ]
+
+
+def test_select_files_applies_an_anchored_exclude(tmp_path):
+    for path in [
+        "api/src/main/java/io/othercompany/package/MyBorrowedClass.java",
+        "api/src/main/java/io/ours/Ours.java",
+    ]:
+        target = tmp_path / path
+        os.makedirs(target.parent, exist_ok=True)
+        target.write_text("class A {}\n", encoding="utf-8")
+
+    selected = select_files(tmp_path, "java", [], ["/**/MyBorrowedClass.java"])
+
+    assert relative_names(tmp_path, selected) == ["api/src/main/java/io/ours/Ours.java"]
+
+
+def test_select_files_does_not_descend_into_an_anchored_directory(tmp_path):
+    build_tree(tmp_path)
+    os.makedirs(tmp_path / "src/build")
+    (tmp_path / "src/build/e.py").write_text("x\n", encoding="utf-8")
+
+    selected = select_files(tmp_path, "py", [], ["/build"])
+
+    assert "build/d.py" not in relative_names(tmp_path, selected)
+    assert "src/build/e.py" in relative_names(tmp_path, selected)
