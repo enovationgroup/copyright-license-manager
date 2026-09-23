@@ -83,3 +83,11 @@ def test_format_single_update_sass():
 
 def test_format_single_update_html():
     run_test_config("format/html/", "single-update.html", "format/single.update.yml")
+
+
+def test_first_line_python():
+    run_test_config("default/py/", "first_line.py", "default/single.update.yml")
+
+
+def test_first_line_sass():
+    run_test_config("default/sass/", "first-line.sass", "default/single.update.yml")

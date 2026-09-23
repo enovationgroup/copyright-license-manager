@@ -132,3 +132,47 @@ def test_start_line_without_text_is_left_alone():
 
     assert action == "none"
     assert new_text == text
+
+
+def test_copyright_on_closing_line_is_updated():
+    action, text = run("css", "/*\n * note\n * Copyright (c) 2015 Enovation */ .a {}\n")
+
+    assert action == "update"
+    assert text == (
+        f"/*\n * {SPDX}\n * ---\n * All rights reserved.\n * ---\n * note\n*/\n.a {{}}\n"
+    )
+
+
+def test_copyright_on_closing_line_is_updated_html():
+    action, text = run(
+        "html", "<!--\n  note\n  Copyright (c) 2015 Enovation -->\n<div></div>\n"
+    )
+
+    assert action == "update"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n  note\n-->\n"
+        "<div></div>\n"
+    )
+
+
+def test_copyright_on_first_line_of_line_comments():
+    action, text = run("py", "# Copyright (c) 2015 Enovation\n# note\nprint(1)\n")
+
+    assert action == "update"
+    assert text == f"# {SPDX}\n# ---\n# All rights reserved.\n# ---\n# note\nprint(1)\n"
+
+
+def test_copyright_below_first_comment_is_reported(caplog):
+    action, text = run(
+        "js", "/* eslint-disable */\n/* Copyright (c) 2015 Enovation */\nfoo();\n"
+    )
+
+    assert action == "add"
+    assert "not recognised as the header" in caplog.text
+
+
+def test_first_comment_without_copyright_below_is_not_reported(caplog):
+    action, _ = run("js", "/* eslint-disable */\nfoo('Copyright');\n")
+
+    assert action == "add"
+    assert "not recognised as the header" not in caplog.text

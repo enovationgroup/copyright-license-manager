@@ -260,6 +260,55 @@ def _split_header_start(line, header_style, single_line):
     return lines
 
 
+def _split_header_end(line, header_style):
+    """Move the text on the last line of a block comment to a line of its own.
+
+    `text */` becomes the text followed by the end marker, and code following
+    the end marker is kept on a line of its own below it.
+
+    Parameters
+    ----------
+    line
+        The last line of the comment
+    header_style
+        The comment style the comment is written in
+
+    Returns
+    -------
+        The lines replacing the last line of the comment
+
+    """
+    before, _, after = line.partition(header_style["end"].strip())
+    if before.strip() == "" and after.strip() == "":
+        return [line]
+
+    lines = []
+    if before.strip() != "":
+        lines.append(before.rstrip() + "\n")
+    lines.append(header_style["end"] + "\n")
+    if after.strip() != "":
+        lines.append(after.strip() + "\n")
+
+    return lines
+
+
+def _leading_comment_end(lines, ext, max_region):
+    """The index of the last line of the first comment, in any known style"""
+    comment = comments.get(ext)
+    for header_style in [comment] + comment["legacy"]:
+        block = _find_header_block(
+            lines,
+            header_style["start"],
+            header_style["end"],
+            max_region=max_region,
+            indented=header_style.get("indented", False),
+        )
+        if block is not None:
+            return block[1]
+
+    return None
+
+
 def _is_marker(line, marker, char):
     """Whether a header line consists of nothing but a license marker"""
     text = line.strip()
@@ -432,19 +481,25 @@ def render_update(cfg, ext, offset, lines, args):
     # This block contains only the copyright lines
     # Remove existing copyright lines inside the header area, regardless of indentation.
     removed = 0
+    start_removed = False
     if header_start_idx is not None and header_end_idx is not None:
         header_slice_end = min(header_end_idx + 1, len(lines))
         for idx in range(header_slice_end - 1, header_start_idx - 1, -1):
             if "Copyright" in lines[idx]:
                 lines.pop(idx)
                 removed += 1
+                start_removed = start_removed or idx == header_start_idx
 
     legal_entities = cfg["legal"]
     idx = 0
     # Insert copyright lines right after the header start (or at top if no header).
+    # A header of line comments may start with the copyright itself, the
+    # new copyright lines then take the place of that line.
     insert_at = 0
-    if header_start_idx is not None:
+    if header_start_idx is not None and not start_removed:
         insert_at = header_start_idx + 1
+    elif header_start_idx is not None:
+        insert_at = header_start_idx
 
     for lid in range(len(legal_entities)):
         legal = legal_entities[lid]
@@ -554,9 +609,32 @@ def analyze(cfg, ext, lines, path, args):
                     scan_lines, ext, max_region=args.region
                 )
 
+        # The same goes for text on the last line of a block comment
+        if header is not None and header[3] is not None:
+            idx = offset + header[1]
+            split = _split_header_end(lines[idx], header_style)
+            if split != [lines[idx]]:
+                lines = lines[:idx] + split + lines[idx + 1 :]
+                scan_lines = lines[offset:]
+                header_style, header = detect_header(
+                    scan_lines, ext, max_region=args.region
+                )
+
         if header is None or not _has_copyright(header[2]):
             action = "add"
             new_lines = render_insert(cfg, ext, offset, lines)
+
+            # Only the first comment of a file can be the header, a copyright
+            # in a comment below it is not updated
+            first_end = _leading_comment_end(scan_lines, ext, args.region)
+            if first_end is not None:
+                below = scan_lines[first_end + 1 :]
+                _, later = detect_header(below, ext, max_region=args.region)
+                if later is not None and _has_copyright(below[later[0] : later[1] + 1]):
+                    log.warning(
+                        f"{path}: the copyright below the first comment is not "
+                        "recognised as the header, a new header is added above"
+                    )
         else:
             action = "update"
             new_lines = render_update(cfg, ext, offset, lines, args)

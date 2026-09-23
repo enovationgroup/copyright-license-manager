@@ -18,6 +18,7 @@ CONFIGS = {
     "prologue": "single",
     "prologue-xml": "single",
     "prologue-update": "single.update",
+    "first-line": "single.update",
 }
 
 OUTPUTS = sorted(glob.glob(test_dir + "/output/*/*/*.*"))

@@ -222,6 +222,10 @@ place, even when new headers of that file type use a different comment style.
 Any other leading comment, such as an `eslint-disable` pragma, is left alone
 and the header is added above it.
 
+Only the first comment of a file can be the header. When a copyright statement
+is found in a comment below it, clmgr adds a new header and logs a warning, so
+the old statement can be removed by hand.
+
 ##### include
 
 A list of glob patterns to include files for processing. When it is left empty
