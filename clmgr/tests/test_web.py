@@ -51,7 +51,7 @@ def test_prologue_without_prologue():
 def test_prologue_not_configured():
     lines = ["#!/usr/bin/env python\n", "print('test')\n"]
 
-    assert count_prologue_lines(lines, comments["py"].get("prologue")) == 0
+    assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
 
 
 def test_prologue_only_at_start_of_file():
@@ -98,3 +98,20 @@ def test_prologue_without_line_ending_keeps_header_on_own_line():
     assert action == "add"
     assert new_lines[0] == "<!DOCTYPE html>\n"
     assert new_lines[1] == "<!--\n"
+
+
+def test_comment_styles_have_the_same_shape():
+    keys = set(comments["java"])
+
+    for ext, comment in comments.items():
+        assert set(comment) == keys, ext
+
+
+def test_comment_styles_do_not_share_state():
+    styles = list(comments.values())
+
+    for idx, comment in enumerate(styles):
+        for other in styles[idx + 1 :]:
+            assert comment is not other
+            assert comment["license"] is not other["license"]
+            assert comment["prologue"] is not other["prologue"]

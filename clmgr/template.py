@@ -9,7 +9,43 @@ CHARSET = re.compile(r"@charset[^;\n]*;[^\n]*\n?")
 XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
 DOCTYPE = re.compile(r"<!(?i:doctype)[^>]*>[^\n]*\n?")
 
-# Comment styles shared by several source extensions
+# Comment styles, shared by every source extension that uses them
+JAVA = {
+    "start": "/*",
+    "char": "*",
+    "line": " * ",
+    "end": " */",
+    "divider": True,
+    "license": {"start": "---", "end": "---"},
+}
+
+CSHARP = {
+    "start": "/*************************************************************************",
+    "char": "*",
+    "line": " * ",
+    "end": " */",
+    "divider": True,
+    "license": {"start": "---", "end": "---"},
+}
+
+HASH = {
+    "start": "#",
+    "char": "#",
+    "line": "# ",
+    "end": "#",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+}
+
+SQL = {
+    "start": "/*",
+    "char": "",
+    "line": "  ",
+    "end": "*/",
+    "divider": False,
+    "license": {"start": "---", "end": "---"},
+}
+
 BANNER = {
     "start": "/*! *****************************************************************************",
     "char": "*",
@@ -41,57 +77,42 @@ MARKUP = {
 
 
 def style(comment_style, prologue=()):
-    """Combine a comment style with the prologue patterns of an extension"""
-    return {**comment_style, "prologue": list(prologue)}
+    """Create the comment configuration of a source extension
+
+    Every extension gets its own copy, so changing one of them can never
+    affect another extension that shares the same comment style.
+
+    Parameters
+    ----------
+    comment_style
+        One of the comment styles above
+    prologue
+        Patterns of the lines that must stay above the header
+
+    Returns
+    -------
+        The comment configuration of the extension
+
+    """
+    return {
+        **comment_style,
+        "license": dict(comment_style["license"]),
+        "prologue": list(prologue),
+    }
 
 
 comments = {
-    "java": {
-        "start": "/*",
-        "char": "*",
-        "line": " * ",
-        "end": " */",
-        "divider": True,
-        "license": {"start": "---", "end": "---"},
-    },
-    "ts": BANNER,
-    "cs": {
-        "start": "/*************************************************************************",
-        "char": "*",
-        "line": " * ",
-        "end": " */",
-        "divider": True,
-        "license": {"start": "---", "end": "---"},
-    },
-    "py": {
-        "start": "#",
-        "char": "#",
-        "line": "# ",
-        "end": "#",
-        "divider": False,
-        "license": {"start": "---", "end": "---"},
-    },
-    "sh": {
-        "start": "#",
-        "char": "#",
-        "line": "#",
-        "end": "#",
-        "prologue": [SHEBANG],
-    },
-    "sql": {
-        "start": "/*",
-        "char": "",
-        "line": "  ",
-        "end": "*/",
-        "divider": False,
-        "license": {"start": "---", "end": "---"},
-    },
+    "java": style(JAVA),
+    "ts": style(BANNER, [SHEBANG]),
+    "cs": style(CSHARP),
+    "py": style(HASH),
+    "sql": style(SQL),
     # JavaScript
     "js": style(BANNER, [SHEBANG]),
     "mjs": style(BANNER, [SHEBANG]),
     "cjs": style(BANNER, [SHEBANG]),
-    "jsx": style(BANNER, [SHEBANG]),
-    "tsx": style(BANNER, [SHEBANG]),
+    "jsx": style(BANNER),
+    "tsx": style(BANNER),
     # Stylesheets
     "css": style(BANNER, [CHARSET]),
     "scss": style(BANNER, [CHARSET]),
@@ -102,15 +123,14 @@ comments = {
     # Markup
     "html": style(MARKUP, [XML_DECLARATION, DOCTYPE]),
     "htm": style(MARKUP, [XML_DECLARATION, DOCTYPE]),
-    "vue": MARKUP,
-    "svelte": MARKUP,
+    "vue": style(MARKUP),
+    "svelte": style(MARKUP),
 }
 
 licenses = {"default": "All rights reserved."}
 
-# Source extensions clmgr can process. "sh" has a comment style above, but no
-# license handling and no header implementation yet, so it is not offered.
-sources = [ext for ext in comments if ext != "sh"]
+# Source extensions clmgr can process
+sources = list(comments)
 
 # Placeholders a copyright format may use
 placeholders = ["inception", "year", "name", "locality", "country"]

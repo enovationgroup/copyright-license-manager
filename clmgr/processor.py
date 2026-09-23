@@ -416,7 +416,7 @@ def analyze(cfg, ext, lines, path, args):
     """
     try:
         # Lines such as a shebang or doctype must stay at the top of the file
-        offset = count_prologue_lines(lines, comments.get(ext).get("prologue"))
+        offset = count_prologue_lines(lines, comments.get(ext)["prologue"])
 
         # Determine insert vs update by scanning the header block rather than
         # relying on a fixed line index (SQL and indented headers break that).
