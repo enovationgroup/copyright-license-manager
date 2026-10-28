@@ -175,6 +175,21 @@ def _has_copyright(header_body_lines):
     return any("Copyright" in line for line in header_body_lines)
 
 
+def _comment_has_copyright(lines, header, header_style):
+    """Whether a comment found by `_find_header_block` holds a copyright.
+
+    The first line of the comment counts as well. For a block comment that
+    starts and ends on one line, only that comment counts, not a second
+    comment that follows it on the same line.
+    """
+    start_idx, end_idx = header[0], header[1]
+    if start_idx == end_idx and header_style["start"] != header_style["end"]:
+        first_comment = lines[start_idx].split(header_style["end"].strip(), 1)[0]
+        return _has_copyright([first_comment])
+
+    return _has_copyright(lines[start_idx : end_idx + 1])
+
+
 def _candidate_styles(ext):
     """The comment styles a header of an extension may be written in.
 
@@ -227,8 +242,7 @@ def detect_header(lines, ext, max_region=None):
         header = _find_comment(lines, header_style, max_region)
         if header is None:
             continue
-        # The copyright may still be on the first line of the comment
-        if copyright_only and not _has_copyright(lines[header[0] : header[1] + 1]):
+        if copyright_only and not _comment_has_copyright(lines, header, header_style):
             continue
         return header_style, header
 
@@ -403,7 +417,7 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     # A comment without a copyright, such as a directive, is left as it is in
     # copyright_only styles and the header is written above it
     if header is not None and comments.get(ext)["copyright_only"]:
-        if not _has_copyright(lines[header[0] : header[1] + 1]):
+        if not _comment_has_copyright(lines, header, comments.get(ext)):
             header = None
 
     header_detected = header is not None

@@ -517,3 +517,14 @@ def test_line_with_only_the_comment_char_does_not_set_the_prefix_java():
 
     assert action == "update"
     assert f" * {SPDX}\n" in text
+
+
+def test_markup_directive_followed_by_a_copyright_comment_on_one_line():
+    source = "<!-- a --><!-- Copyright (c) 2010 Old -->\n<template></template>\n"
+
+    action, text = run("vue", source)
+
+    assert action == "add"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n" + source
+    )
