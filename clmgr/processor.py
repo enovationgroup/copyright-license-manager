@@ -69,7 +69,9 @@ def _infer_line_prefix_from_header_body(header_body_lines, char, fallback_line_p
     """
 
     for raw in header_body_lines:
-        if raw.strip() == "":
+        # An empty line, or one holding only the comment char (" *"), does not
+        # show the whitespace that follows the char on a line with text
+        if raw.strip() == "" or (char and raw.strip() == char):
             continue
 
         m = re.match(r"^(\s*)(.*)$", raw)

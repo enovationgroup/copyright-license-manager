@@ -501,3 +501,19 @@ def test_sass_line_comment_header_is_updated():
     assert text == (
         f"//\n// {SPDX}\n// ---\n// All rights reserved.\n// ---\n// note\n//\n.a\n  b: c\n"
     )
+
+
+def test_line_with_only_the_comment_char_does_not_set_the_prefix():
+    action, text = run("ts", "/*\n *\n * Copyright (c) 2010 Old\n *\n */\nx();\n")
+
+    assert action == "update"
+    assert text == (
+        f"/*\n * {SPDX}\n * ---\n * All rights reserved.\n * ---\n *\n *\n */\nx();\n"
+    )
+
+
+def test_line_with_only_the_comment_char_does_not_set_the_prefix_java():
+    action, text = run("java", "/*\n *\n * Copyright (c) 2010 Old\n */\nclass A {}\n")
+
+    assert action == "update"
+    assert f" * {SPDX}\n" in text
