@@ -226,8 +226,9 @@ All rights reserved.
 
 Markup comments use `===` around the license, because XML based markup does
 not allow `--` inside a comment. For the same reason clmgr reports a
-configuration error when the copyright statements or the license content
-contain `--` while a markup source is configured:
+configuration error when the copyright statements, or the license content
+when it is written into the header, contain `--` while a markup source is
+configured:
 
 ```html
 <!--

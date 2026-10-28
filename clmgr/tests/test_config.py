@@ -175,3 +175,21 @@ def test_config_reports_double_dash_in_license_with_other_problems(tmp_path, cap
 
     assert "is not supported" in caplog.text
     assert "legal entity [0] is missing" in caplog.text
+
+
+def test_config_with_a_list_as_source(tmp_path, caplog):
+    assert_rejected(
+        tmp_path, "source:\n  - [html]\n" + VALID_LEGAL, "is not supported", caplog
+    )
+
+
+def test_config_with_double_dash_in_a_license_that_is_not_written(tmp_path):
+    for license_cfg in [
+        "license:\n  enabled: false\n  content: A -- B\n",
+        "license:\n  enabled: true\n  external: true\n  content: A -- B\n",
+    ]:
+        config_file = write_config(
+            tmp_path, "source:\n  - html\n" + license_cfg + VALID_LEGAL
+        )
+
+        validate_config(read_config(config_file), config_file)

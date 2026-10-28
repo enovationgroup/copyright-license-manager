@@ -244,8 +244,9 @@ def validate_markup(cfg, copyright=True):
         The problems found
 
     """
+    # Unsupported sources are reported by validate_source
     markup = [
-        ext for ext in cfg["source"] if ext in comments and comments[ext]["markup"]
+        ext for ext in cfg["source"] if ext in sources and comments[ext]["markup"]
     ]
     if not markup:
         return []
@@ -268,8 +269,14 @@ def validate_markup(cfg, copyright=True):
                 f"which is not allowed in {', '.join(markup)} comments"
             )
 
+    # The content is only written when the license is enabled and not external
     license_cfg = cfg.get("license")
-    if isinstance(license_cfg, dict) and "--" in str(license_cfg.get("content", "")):
+    written = (
+        isinstance(license_cfg, dict)
+        and license_cfg.get("enabled")
+        and not license_cfg.get("external")
+    )
+    if written and "--" in str(license_cfg.get("content", "")):
         errors.append(
             f"license content contains '--', "
             f"which is not allowed in {', '.join(markup)} comments"
