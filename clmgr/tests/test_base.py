@@ -10,6 +10,9 @@ from clmgr.main import main
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 
+# The current year in every test, the year the expected output is written in
+YEAR = 2026
+
 
 def assert_source_configured(config_file, filename):
     """A file whose extension is not a configured source is skipped by clmgr,

@@ -445,9 +445,14 @@ def _copyrights_outside_header(lines, ext, header_style, header, max_region):
     return found
 
 
+def current_year():
+    """The year the copyright of the last legal entity ends in"""
+    return datetime.datetime.now().year
+
+
 def _statements(cfg):
     """The copyright statements of the configuration, up to the current year"""
-    return statements(cfg["format"], cfg["legal"], datetime.datetime.now().year)
+    return statements(cfg["format"], cfg["legal"], current_year())
 
 
 def _license_content(cfg, line_prefix):

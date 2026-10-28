@@ -1,11 +1,9 @@
 """Regression tests for existing headers and leading comments in unusual layouts"""
 
-import datetime
-
 from clmgr.args import apply_config_defaults, parse_args
 from clmgr.processor import analyze
+from clmgr.tests.test_base import YEAR
 
-YEAR = datetime.datetime.now().year
 WARNING = "a copyright statement outside the header is left unchanged"
 SPDX = f"SPDX-FileCopyrightText: Copyright (c) 2015 - {YEAR} [Enovation Group B.V. - Capelle aan den IJssel - NL]"
 
