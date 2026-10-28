@@ -10,7 +10,6 @@ import os
 from pathlib import Path, PurePath
 import re
 
-
 # Directories that never hold source files of the project, such as the
 # packages installed by npm. They are skipped at any depth, whatever the
 # include and exclude options are.
