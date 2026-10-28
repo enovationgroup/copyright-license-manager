@@ -276,8 +276,10 @@ def validate_markup(cfg, check_copyright=True):
         return []
 
     errors = []
+    # The configuration is validated before its defaults are filled in
     copyright_format = cfg.get("format") or DEFAULT_FORMAT
     legal = cfg["legal"] if check_copyright else []
+    # A year never contains "--", so any year will do
     for idx, statement in enumerate(statements(copyright_format, legal, 0)):
         if "--" in statement:
             errors.append(

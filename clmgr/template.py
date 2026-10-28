@@ -160,7 +160,8 @@ comments = {
     "cjs": style(BANNER, [SHEBANG]),
     "jsx": style(BANNER, [SHEBANG]),
     "tsx": style(BANNER, [SHEBANG]),
-    # Stylesheets
+    # Stylesheets. CSS has no // comments, the warning about a copyright in
+    # one only applies to SCSS and LESS.
     "css": style(BANNER, [CHARSET]),
     "scss": style(BANNER, [CHARSET]),
     "less": style(BANNER, [CHARSET]),
