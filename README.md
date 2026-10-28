@@ -245,8 +245,17 @@ mark always stays in front of the file.
 
 An existing `/* */` header that holds a copyright statement is updated in
 place, even when new headers of that file type use a different comment style.
-Any other leading comment, such as an `eslint-disable` pragma, is left alone
-and the header is added above it.
+What happens to a leading comment without a copyright statement depends on the
+file type:
+
+- JavaScript, TypeScript, stylesheets and C#: a comment that is not written in
+  the style of new headers, such as an `eslint-disable` pragma, is left alone
+  and the header is added above it
+- Markup: every comment without a copyright statement is left alone, so
+  directives such as `<!-- eslint-disable -->`, `<!-- prettier-ignore -->` or
+  conditional comments keep working
+- Java, SQL and Python: the first comment is the header, the copyright
+  statements are added to it
 
 Only the first comment of a file can be the header. When a copyright statement
 is found in a comment below it, clmgr adds a new header and logs a warning, so

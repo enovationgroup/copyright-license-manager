@@ -172,10 +172,13 @@ def _candidate_styles(ext):
 
     Returns a list of (header_style, copyright_only) tuples: the style of new
     headers first, then the legacy styles, which only count as the header
-    when the comment holds a copyright statement.
+    when the comment holds a copyright statement. A markup comment also only
+    counts as the header when it holds one, because leading markup comments
+    are often directives such as `<!-- eslint-disable -->`.
     """
     comment = comments.get(ext)
-    return [(comment, False)] + [(legacy, True) for legacy in comment["legacy"]]
+    candidates = [(comment, comment["markup"])]
+    return candidates + [(legacy, True) for legacy in comment["legacy"]]
 
 
 def _find_comment(lines, header_style, max_region):
@@ -192,9 +195,9 @@ def _find_comment(lines, header_style, max_region):
 def detect_header(lines, ext, max_region=None):
     """Find the existing header of a file and the comment style it uses.
 
-    A header in the comment style of new headers is always recognised. A
-    header in one of the legacy styles of the extension is only recognised
-    when it holds a copyright statement.
+    A header in the comment style of new headers is recognised, unless it is
+    a markup comment without a copyright statement. A header in one of the
+    legacy styles of the extension is only recognised when it holds one.
 
     Parameters
     ----------
@@ -364,6 +367,13 @@ def render_insert(cfg, ext, offset, lines):
 
     # Detect an existing header block at the top of the file (position-agnostic)
     header = _find_header_block(lines, start, end)
+
+    # A markup comment without a copyright, such as a directive, is left as it
+    # is and the header is written above it
+    if header is not None and comments.get(ext)["markup"]:
+        if not _has_copyright(lines[header[0] : header[1] + 1]):
+            header = None
+
     header_detected = header is not None
     header_body_lines = []
     header_end_line = None

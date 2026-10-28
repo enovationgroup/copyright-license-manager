@@ -86,14 +86,39 @@ def test_sass_block_header_ends_at_first_line_not_indented():
     )
 
 
-def test_single_line_comment_is_extended():
+def test_markup_comment_without_copyright_is_left_alone():
     action, text = run("html", "<!-- build stamp -->\n<!DOCTYPE html>\n<html>\n")
 
     assert action == "add"
     assert text == (
-        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n  build stamp\n-->\n"
-        "<!DOCTYPE html>\n<html>\n"
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n"
+        "<!-- build stamp -->\n<!DOCTYPE html>\n<html>\n"
     )
+
+
+def test_markup_directive_is_left_alone():
+    source = (
+        "<!-- eslint-disable vue/multi-word-component-names -->\n"
+        "<template>\n  <p>x</p>\n</template>\n"
+    )
+
+    action, text = run("vue", source)
+
+    assert action == "add"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n" + source
+    )
+
+
+def test_markup_conditional_comment_is_left_alone():
+    source = (
+        '<!--[if IE]><link rel="stylesheet" href="ie.css"><![endif]-->\n<div></div>\n'
+    )
+
+    action, text = run("html", source)
+
+    assert action == "add"
+    assert text.endswith("-->\n" + source)
 
 
 def test_single_line_header_is_updated():
