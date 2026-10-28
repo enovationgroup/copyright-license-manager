@@ -162,3 +162,16 @@ def test_config_with_double_dash_without_markup(tmp_path):
     )
 
     validate_config(read_config(config_file), config_file)
+
+
+def test_config_reports_double_dash_in_license_with_other_problems(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\n  - json\nlicense:\n  enabled: true\n  content: A -- B\n"
+        "legal:\n  - name: Enovation Group B.V.\n",
+        "license content contains '--'",
+        caplog,
+    )
+
+    assert "is not supported" in caplog.text
+    assert "legal entity [0] is missing" in caplog.text

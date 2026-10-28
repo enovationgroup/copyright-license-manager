@@ -180,11 +180,13 @@ def validate_config(cfg, config_file):
 
     if not errors:
         errors.extend(validate_source(cfg["source"]))
-        errors.extend(validate_legal(cfg["legal"]))
-        errors.extend(validate_format(cfg.get("format")))
+        rendering_errors = validate_legal(cfg["legal"])
+        rendering_errors += validate_format(cfg.get("format"))
+        errors.extend(rendering_errors)
 
-    if not errors:
-        errors.extend(validate_markup(cfg))
+        # The copyright statements can only be rendered from a valid format
+        # and complete legal entities, the license content is always checked
+        errors.extend(validate_markup(cfg, copyright=not rendering_errors))
 
     if errors:
         for error in errors:
@@ -222,20 +224,36 @@ def validate_format(copyright_format):
     ]
 
 
-def validate_markup(cfg):
+def validate_markup(cfg, copyright=True):
     """Verify that the header text can be written into a markup comment
 
     A markup comment such as <!-- --> must not contain "--", so neither the
     copyright statements nor the license content may contain it when a markup
     source is configured.
+
+    Parameters
+    ----------
+    cfg
+        Parsed configuration
+    copyright
+        Whether to check the copyright statements, which requires a valid
+        format and complete legal entities to render them
+
+    Returns
+    -------
+        The problems found
+
     """
-    markup = [ext for ext in cfg["source"] if comments[ext]["markup"]]
+    markup = [
+        ext for ext in cfg["source"] if ext in comments and comments[ext]["markup"]
+    ]
     if not markup:
         return []
 
     errors = []
     copyright_format = cfg.get("format") or DEFAULT_FORMAT
-    for idx, entity in enumerate(cfg["legal"]):
+    legal = cfg["legal"] if copyright else []
+    for idx, entity in enumerate(legal):
         statement = template(
             copyright_format,
             entity["inception"],
