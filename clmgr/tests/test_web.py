@@ -35,6 +35,28 @@ def test_prologue_xml_declaration_html():
 # Extensions that share their comment style with a fully tested extension
 SHARED_STYLE_EXTENSIONS = ["mjs", "cjs", "jsx", "tsx", "less", "htm", "vue", "svelte"]
 
+# The fully tested extension each extension shares its comment configuration
+# with, including the comments of the prologue and the warnings
+SAME_CONFIGURATION = {
+    "mjs": "js",
+    "cjs": "js",
+    "jsx": "js",
+    "tsx": "js",
+    "scss": "css",
+    "less": "css",
+    "htm": "html",
+}
+
+
+@pytest.mark.parametrize("ext, reference", SAME_CONFIGURATION.items())
+def test_configuration_is_the_same_as_the_reference(ext, reference):
+    assert comments[ext] == comments[reference]
+
+
+@pytest.mark.parametrize("ext", ["vue", "svelte"])
+def test_component_configuration_is_html_without_prologue(ext):
+    assert comments[ext] == {**comments["html"], "prologue": []}
+
 
 @pytest.mark.parametrize("ext", SHARED_STYLE_EXTENSIONS)
 def test_single_extensions(ext):

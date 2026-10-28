@@ -617,6 +617,12 @@ def test_copyright_in_a_line_comment_is_reported(caplog):
     assert f'{WARNING}: "// Copyright (c) 2015 X"' in caplog.text
 
 
+def test_copyright_in_a_line_comment_is_reported_dotnet(caplog):
+    run("cs", "// Copyright (c) 2015 X\nusing System;\n")
+
+    assert f'{WARNING}: "// Copyright (c) 2015 X"' in caplog.text
+
+
 def test_copyright_in_a_line_comment_is_reported_sql(caplog):
     run(
         "sql",
