@@ -305,6 +305,8 @@ A list of legal entities associated with the copyright. Each entity must have th
 
 The format string for each row in the copyright notice. This property is optional and by default,
 it is set to `SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]`.
+The format must contain the word `Copyright`, because clmgr recognises existing
+copyright statements by it.
 Only the following placeholders can be used, any other placeholder is reported
 as a configuration error:
 

@@ -225,7 +225,14 @@ def validate_format(copyright_format):
         if name is not None
     ]
 
-    return [
+    errors = []
+
+    # Existing copyright statements are recognised by this word, without it
+    # every run would add the statements again
+    if "Copyright" not in copyright_format:
+        errors.append("format must contain the word 'Copyright'")
+
+    return errors + [
         (
             f"format uses unknown placeholder '{name}', "
             if name

@@ -220,3 +220,12 @@ def test_config_with_a_numbered_placeholder(tmp_path, caplog):
         "format uses unknown placeholder '0'",
         caplog,
     )
+
+
+def test_config_with_a_format_without_copyright(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - java\nformat: '(c) {inception} - {year} {name}'\n" + VALID_LEGAL,
+        "format must contain the word 'Copyright'",
+        caplog,
+    )
