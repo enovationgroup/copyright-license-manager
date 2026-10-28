@@ -112,7 +112,7 @@ def _find_header_block(
       without the whitespace a style writes in front of the end marker
     - supports single-line comment styles where start==end (e.g. '#')
     - with `indented`, a block comment also ends before the first line that
-      is not indented, as in the indented syntax of Sass
+      is not indented or with the file, as in the indented syntax of Sass
     """
 
     if not lines:
@@ -167,6 +167,11 @@ def _find_header_block(
         if indented and lines[idx].strip() != "" and not lines[idx][0].isspace():
             body = lines[first_idx + 1 : idx]
             return first_idx, idx - 1, body, None
+
+    # An indented comment that is not followed by a line that is not
+    # indented ends with the file
+    if indented and scan_upto == len(lines):
+        return first_idx, len(lines) - 1, lines[first_idx + 1 :], None
 
     return None
 

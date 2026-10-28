@@ -87,6 +87,19 @@ def test_sass_block_header_ends_at_first_line_not_indented():
     )
 
 
+def test_sass_block_header_ends_with_the_file():
+    action, text = run("sass", "/* Copyright (c) 2015 Enovation\n   more\n")
+
+    assert action == "update"
+    assert text == f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n   more\n"
+
+
+def test_sass_block_comment_ending_with_the_file_is_reported(caplog):
+    run("sass", ".a\n  b: c\n/* Copyright (c) 2010 X\n")
+
+    assert f'{WARNING}: "/* Copyright (c) 2010 X"' in caplog.text
+
+
 def test_markup_comment_without_copyright_is_left_alone():
     action, text = run("html", "<!-- build stamp -->\n<!DOCTYPE html>\n<html>\n")
 
