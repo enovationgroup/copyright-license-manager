@@ -6,6 +6,7 @@ from clmgr.args import apply_config_defaults, parse_args
 from clmgr.processor import analyze
 
 YEAR = datetime.datetime.now().year
+WARNING = "a copyright statement outside the header is left unchanged"
 SPDX = f"SPDX-FileCopyrightText: Copyright (c) 2015 - {YEAR} [Enovation Group B.V. - Capelle aan den IJssel - NL]"
 
 
@@ -221,14 +222,14 @@ def test_copyright_below_first_comment_is_reported(caplog):
     )
 
     assert action == "add"
-    assert "not recognised as the header and is left unchanged" in caplog.text
+    assert WARNING in caplog.text
 
 
 def test_first_comment_without_copyright_below_is_not_reported(caplog):
     action, _ = run("js", "/* eslint-disable */\nfoo('Copyright');\n")
 
     assert action == "add"
-    assert "not recognised as the header" not in caplog.text
+    assert WARNING not in caplog.text
 
 
 def test_more_legal_entities_than_copyright_lines_keep_the_license():
@@ -443,7 +444,7 @@ def test_copyright_below_first_comment_is_reported_java(caplog):
     assert text.endswith(
         " * eslint-disable\n */\n/* Copyright (c) 2015 Enovation */\nclass A {}\n"
     )
-    assert "not recognised as the header and is left unchanged" in caplog.text
+    assert WARNING in caplog.text
 
 
 def test_plain_block_header_is_updated_in_place_typescript():
@@ -528,3 +529,64 @@ def test_markup_directive_followed_by_a_copyright_comment_on_one_line():
     assert text == (
         f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n" + source
     )
+
+
+def test_copyright_in_a_later_comment_is_reported(caplog):
+    run(
+        "js",
+        "/* eslint-disable */\n/* jshint esversion: 6 */\n/* Copyright (c) 2015 X */\n"
+        "foo();\n",
+    )
+
+    assert f'{WARNING}: "/* Copyright (c) 2015 X */"' in caplog.text
+
+
+def test_copyright_in_a_comment_after_code_is_reported(caplog):
+    run("js", '/* eslint-disable */\nimport a from "a";\n/* Copyright (c) 2015 X */\n')
+
+    assert f'{WARNING}: "/* Copyright (c) 2015 X */"' in caplog.text
+
+
+def test_copyright_in_a_line_comment_is_reported(caplog):
+    action, text = run("ts", "// Copyright (c) 2015 X\nfoo();\n")
+
+    assert action == "add"
+    assert text.endswith(" */\n// Copyright (c) 2015 X\nfoo();\n")
+    assert f'{WARNING}: "// Copyright (c) 2015 X"' in caplog.text
+
+
+def test_copyright_in_a_line_comment_is_reported_sql(caplog):
+    run(
+        "sql",
+        "/*\n  Copyright (c) 2015 Enovation\n*/\n-- Copyright (c) 2010 X\nSELECT 1;\n",
+    )
+
+    assert f'{WARNING}: "-- Copyright (c) 2010 X"' in caplog.text
+
+
+def test_copyright_outside_an_updated_header_is_reported(caplog):
+    action, _ = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n */\n// Copyright (c) 2010 X\nclass A {}\n",
+    )
+
+    assert action == "update"
+    assert f'{WARNING}: "// Copyright (c) 2010 X"' in caplog.text
+
+
+def test_copyright_on_the_line_of_another_comment_is_reported(caplog):
+    run("vue", "<!-- a --><!-- Copyright (c) 2010 X -->\n<template></template>\n")
+
+    assert WARNING in caplog.text
+
+
+def test_comments_without_copyright_are_not_reported(caplog):
+    run("java", "/* a */\n/* b */\n// c\nclass A {}\n")
+
+    assert WARNING not in caplog.text
+
+
+def test_copyright_beyond_the_search_region_is_not_reported(caplog):
+    run("js", "foo();\n" * 12 + "// Copyright (c) 2010 X\n")
+
+    assert WARNING not in caplog.text

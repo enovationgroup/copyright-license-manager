@@ -26,6 +26,12 @@ C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
 # indented as well, at the start of a line it would be read as a new rule.
 SASS_BLOCK = {**C_BLOCK, "indented": True, "close": "  */"}
 
+# Line comments a language supports next to the style of its headers. They are
+# never used as the header, clmgr only warns when one holds a copyright
+# statement that it leaves unchanged.
+SLASH_LINES = {"start": "//", "end": "//"}
+DASH_LINES = {"start": "--", "end": "--"}
+
 # Comment styles, shared by every source extension that uses them
 JAVA = {
     "start": "/*",
@@ -34,6 +40,7 @@ JAVA = {
     "end": " */",
     "divider": True,
     "license": {"start": "---", "end": "---"},
+    "other_comments": [SLASH_LINES],
 }
 
 CSHARP = {
@@ -43,6 +50,7 @@ CSHARP = {
     "end": " */",
     "divider": True,
     "license": {"start": "---", "end": "---"},
+    "other_comments": [SLASH_LINES],
     "legacy": [C_BLOCK],
 }
 
@@ -62,6 +70,7 @@ SQL = {
     "end": "*/",
     "divider": False,
     "license": {"start": "---", "end": "---"},
+    "other_comments": [DASH_LINES],
 }
 
 BANNER = {
@@ -71,6 +80,7 @@ BANNER = {
     "end": "****************************************************************************** */",
     "divider": False,
     "license": {"start": "---", "end": "---"},
+    "other_comments": [SLASH_LINES],
     "legacy": [C_BLOCK],
 }
 
@@ -128,6 +138,9 @@ def style(comment_style, prologue=()):
         **comment_style,
         "license": dict(comment_style["license"]),
         "legacy": [dict(legacy) for legacy in comment_style.get("legacy", [])],
+        "other_comments": [
+            dict(other) for other in comment_style.get("other_comments", [])
+        ],
         "prologue": list(prologue),
     }
 

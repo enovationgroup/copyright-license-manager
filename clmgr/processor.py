@@ -343,14 +343,57 @@ def _split_header_end(line, header_style):
     return lines
 
 
-def _leading_comment_end(lines, ext, max_region):
-    """The index of the last line of the first comment, in any known style"""
-    for header_style, _ in _candidate_styles(ext):
-        block = _find_comment(lines, header_style, max_region)
-        if block is not None:
-            return block[1]
+def _copyrights_outside_header(lines, ext, header, max_region):
+    """The copyright statements in comments other than the header.
 
-    return None
+    Every comment that starts within the region is checked, in the comment
+    styles a header may be written in and in the other comment styles of
+    the extension.
+
+    Parameters
+    ----------
+    lines
+        File contents, without the prologue
+    ext
+        Source file extension, used to look up the comment styles
+    header
+        The header as returned by `_find_header_block`, or None
+    max_region
+        Number of lines a comment must start in
+
+    Returns
+    -------
+        The lines holding a copyright statement, stripped
+
+    """
+    comment = comments.get(ext)
+    styles = [header_style for header_style, _ in _candidate_styles(ext)]
+    styles += comment["other_comments"]
+
+    found = []
+    idx = 0
+    while idx < min(len(lines), max_region):
+        if header is not None and header[0] <= idx <= header[1]:
+            idx = header[1] + 1
+            continue
+
+        block = None
+        stripped = lines[idx].lstrip()
+        for header_style in styles:
+            if stripped.startswith(header_style["start"]):
+                block = _find_comment(lines[idx:], header_style, None)
+                if block is not None:
+                    break
+
+        if block is None:
+            idx += 1
+            continue
+
+        block_lines = lines[idx : idx + block[1] + 1]
+        found += [line.strip() for line in block_lines if _has_copyright([line])]
+        idx += block[1] + 1
+
+    return found
 
 
 def _license_content(cfg, line_prefix):
@@ -694,20 +737,19 @@ def analyze(cfg, ext, lines, path, args):
             action = "add"
             new_lines = render_insert(cfg, ext, offset, lines, args.region)
 
-            # Only the first comment of a file can be the header, a copyright
-            # in a comment below it is not updated
-            first_end = _leading_comment_end(scan_lines, ext, args.region)
-            if first_end is not None:
-                below = scan_lines[first_end + 1 :]
-                _, later = detect_header(below, ext, max_region=args.region)
-                if later is not None and _has_copyright(below[later[0] : later[1] + 1]):
-                    log.warning(
-                        f"{path}: the copyright below the first comment is not "
-                        "recognised as the header and is left unchanged"
-                    )
         else:
             action = "update"
             new_lines = render_update(cfg, ext, offset, lines, args)
+
+        # Only the header is updated, a copyright in any other comment is left
+        # as it is
+        for statement in _copyrights_outside_header(
+            scan_lines, ext, header, args.region
+        ):
+            log.warning(
+                f"{path}: a copyright statement outside the header is left "
+                f'unchanged: "{statement}"'
+            )
 
         if bom:
             new_lines = [bom + new_lines[0]] + new_lines[1:]
