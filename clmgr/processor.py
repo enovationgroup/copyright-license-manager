@@ -106,7 +106,8 @@ def _find_header_block(
 
     This is intentionally position-agnostic:
     - it ignores leading whitespace when matching `start`
-    - for block comments it matches `end` by containment (`end in line`)
+    - for block comments it matches `end` by containment (`end in line`),
+      without the whitespace a style writes in front of the end marker
     - supports single-line comment styles where start==end (e.g. '#')
     - with `indented`, a block comment also ends before the first line that
       is not indented, as in the indented syntax of Sass
@@ -139,11 +140,15 @@ def _find_header_block(
         body = lines[first_idx : end_idx + 1]
         return first_idx, end_idx, body, None
 
-    # Block comment style: find the terminating marker.
+    # Block comment style: find the terminating marker. Only the marker
+    # itself counts, so a header closed by */ at the start of a line ends
+    # there and does not run on to a later line holding " */".
+    end = end.strip()
+
     # Handle `/* ... */` on a single line.
-    if end in first_line and first_line.lstrip().startswith(start):
+    after_start = first_line.split(start, 1)[1]
+    if end in after_start:
         # Preserve any content after the start token and before end token as body.
-        after_start = first_line.split(start, 1)[1]
         before_end = after_start.split(end, 1)[0]
         body = []
         if before_end.strip() != "":
@@ -305,6 +310,9 @@ def _split_header_end(line, header_style):
 
     """
     before, _, after = line.partition(header_style["end"].strip())
+    # A rule of stars, as in " **/", is not text that has to be moved
+    if set(before.strip()) <= {"*"}:
+        before = ""
     if before.strip() == "" and after.strip() == "":
         return [line]
 

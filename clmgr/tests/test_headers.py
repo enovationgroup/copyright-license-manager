@@ -451,3 +451,29 @@ def test_plain_block_header_is_updated_in_place_typescript():
 
     assert action == "update"
     assert text == f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n*/\nlet a;\n"
+
+
+def test_header_closed_at_the_start_of_a_line_ends_there():
+    code = (
+        "class Writer {\n"
+        "    void close(java.io.PrintWriter out) {\n"
+        '        out.println(" */");\n'
+        "    }\n"
+        "}\n"
+    )
+
+    action, text = run("java", "/*\n Copyright (c) 2010 Old\n*/\n" + code)
+
+    assert action == "update"
+    assert text == f"/*\n {SPDX}\n\n ---\n All rights reserved.\n ---\n*/\n" + code
+
+
+def test_header_closed_without_a_space_ends_there_dotnet():
+    code = "class A {\n    /** x */\n    int a;\n}\n"
+
+    action, text = run(
+        "cs", "/" + "*" * 73 + "\n * Copyright (c) 2010 Old\n **/\n" + code
+    )
+
+    assert action == "update"
+    assert text.endswith(" **/\n" + code)
