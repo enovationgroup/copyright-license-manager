@@ -477,3 +477,27 @@ def test_header_closed_without_a_space_ends_there_dotnet():
 
     assert action == "update"
     assert text.endswith(" **/\n" + code)
+
+
+def test_sass_directive_is_left_alone():
+    source = (
+        "// stylelint-disable-next-line scss/dollar-variable-pattern\n$Bad_Name: 1\n"
+    )
+
+    action, text = run("sass", source)
+
+    assert action == "add"
+    assert text == (
+        f"//\n// {SPDX}\n// ---\n// All rights reserved.\n// ---\n//\n\n" + source
+    )
+
+
+def test_sass_line_comment_header_is_updated():
+    action, text = run(
+        "sass", "//\n// Copyright (c) 2015 Enovation\n// note\n//\n.a\n  b: c\n"
+    )
+
+    assert action == "update"
+    assert text == (
+        f"//\n// {SPDX}\n// ---\n// All rights reserved.\n// ---\n// note\n//\n.a\n  b: c\n"
+    )

@@ -82,6 +82,9 @@ SASS = {
     "divider": False,
     "license": {"start": "---", "end": "---"},
     "legacy": [SASS_BLOCK],
+    # Leading line comments are often directives, such as
+    # // stylelint-disable-next-line, which must stay where they are
+    "copyright_only": True,
 }
 
 # XML based markup does not allow "--" inside a comment, so the license
@@ -94,6 +97,9 @@ MARKUP = {
     "divider": False,
     "license": {"start": "===", "end": "==="},
     "markup": True,
+    # Leading markup comments are often directives, such as
+    # <!-- eslint-disable --> or conditional comments
+    "copyright_only": True,
 }
 
 
@@ -118,6 +124,7 @@ def style(comment_style, prologue=()):
     """
     return {
         "markup": False,
+        "copyright_only": False,
         **comment_style,
         "license": dict(comment_style["license"]),
         "legacy": [dict(legacy) for legacy in comment_style.get("legacy", [])],

@@ -251,12 +251,12 @@ place, even when new headers of that file type use a different comment style.
 What happens to a leading comment without a copyright statement depends on the
 file type:
 
-- JavaScript, TypeScript, stylesheets and C#: a comment that is not written in
-  the style of new headers, such as an `eslint-disable` pragma, is left alone
-  and the header is added above it
-- Markup: every comment without a copyright statement is left alone, so
-  directives such as `<!-- eslint-disable -->`, `<!-- prettier-ignore -->` or
-  conditional comments keep working
+- JavaScript, TypeScript, CSS, SCSS, LESS and C#: a comment that is not
+  written in the style of new headers, such as an `eslint-disable` pragma, is
+  left alone and the header is added above it
+- Markup and Sass: every comment without a copyright statement is left alone,
+  so directives such as `<!-- eslint-disable -->`, `<!-- prettier-ignore -->`,
+  conditional comments or `// stylelint-disable-next-line` keep working
 - Java, SQL and Python: the first comment is the header, the copyright
   statements are added to it
 

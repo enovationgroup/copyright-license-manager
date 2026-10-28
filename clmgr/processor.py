@@ -178,12 +178,12 @@ def _candidate_styles(ext):
 
     Returns a list of (header_style, copyright_only) tuples: the style of new
     headers first, then the legacy styles, which only count as the header
-    when the comment holds a copyright statement. A markup comment also only
-    counts as the header when it holds one, because leading markup comments
-    are often directives such as `<!-- eslint-disable -->`.
+    when the comment holds a copyright statement. A comment in the style of
+    new headers also only counts when it holds one if the style is marked
+    `copyright_only`, as markup and Sass are.
     """
     comment = comments.get(ext)
-    candidates = [(comment, comment["markup"])]
+    candidates = [(comment, comment["copyright_only"])]
     return candidates + [(legacy, True) for legacy in comment["legacy"]]
 
 
@@ -201,8 +201,9 @@ def _find_comment(lines, header_style, max_region):
 def detect_header(lines, ext, max_region=None):
     """Find the existing header of a file and the comment style it uses.
 
-    A header in the comment style of new headers is recognised, unless it is
-    a markup comment without a copyright statement. A header in one of the
+    A header in the comment style of new headers is recognised, unless the
+    style is marked `copyright_only` and the comment holds no copyright
+    statement. A header in one of the
     legacy styles of the extension is only recognised when it holds one.
 
     Parameters
@@ -397,9 +398,9 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     # Detect an existing header block at the top of the file (position-agnostic)
     header = _find_header_block(lines, start, end, max_region=max_region)
 
-    # A markup comment without a copyright, such as a directive, is left as it
-    # is and the header is written above it
-    if header is not None and comments.get(ext)["markup"]:
+    # A comment without a copyright, such as a directive, is left as it is in
+    # copyright_only styles and the header is written above it
+    if header is not None and comments.get(ext)["copyright_only"]:
         if not _has_copyright(lines[header[0] : header[1] + 1]):
             header = None
 
@@ -473,6 +474,11 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
             out.append(end + "\n")
     else:
         out.append(end + "\n")
+
+        # A header of line comments directly followed by another line comment
+        # would run into it, so the two are kept apart by an empty line
+        if start == end and lines and lines[0].lstrip().startswith(start):
+            out.append("\n")
 
     # Append remaining lines
     out.extend(lines)
