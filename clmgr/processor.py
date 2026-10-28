@@ -254,6 +254,11 @@ def _closing(header_style):
     return header_style.get("close", header_style["end"])
 
 
+def _is_decoration(text):
+    """Whether comment text is decoration, such as a rule of stars or dashes"""
+    return re.search(r"[^\W_]", text) is None
+
+
 def _split_header_start(line, header_style, single_line):
     """Move the text on the first line of a block comment to a line of its own.
 
@@ -282,17 +287,19 @@ def _split_header_start(line, header_style, single_line):
     stripped = line.lstrip()
     indent = line[: len(line) - len(stripped)]
     rest = stripped[len(start) :]
-    # Keep the marker of /*! and /** comments, it directly follows the start
-    marker = re.match(r"[!*]*", rest).group(0)
+    # Keep the marker of /*! and /** comments, it directly follows the start.
+    # The star of an end marker, as in /**/, is not part of it.
+    marker = re.match(r"(?:!|\*(?!/))*", rest).group(0)
     rest = rest[len(marker) :]
 
     after = ""
     if single_line:
         rest, _, after = rest.partition(end)
 
-    # A rule of stars, as in a banner, is not text that has to be moved
+    # Decoration, such as the rule of stars of a banner or /*-----, is not
+    # text that has to be moved
     text = rest.strip()
-    if set(text) <= {"*"}:
+    if _is_decoration(text):
         text = ""
         if not single_line:
             return [line]
@@ -326,17 +333,19 @@ def _split_header_end(line, header_style):
         The lines replacing the last line of the comment
 
     """
-    before, _, after = line.partition(header_style["end"].strip())
-    # A rule of stars, as in " **/", is not text that has to be moved
-    if set(before.strip()) <= {"*"}:
-        before = ""
-    if before.strip() == "" and after.strip() == "":
+    before, end, after = line.partition(header_style["end"].strip())
+    if after.strip() == "" and _is_decoration(before):
         return [line]
 
     lines = []
-    if before.strip() != "":
+    if before.strip() == "":
+        lines.append(_closing(header_style) + "\n")
+    elif _is_decoration(before):
+        # Decoration, such as " **/" or "-----*/", stays with the end marker
+        lines.append(before.rstrip() + end + "\n")
+    else:
         lines.append(before.rstrip() + "\n")
-    lines.append(_closing(header_style) + "\n")
+        lines.append(_closing(header_style) + "\n")
     if after.strip() != "":
         lines.append(after.strip() + "\n")
 

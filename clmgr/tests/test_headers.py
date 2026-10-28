@@ -313,6 +313,55 @@ def test_rule_of_stars_on_the_first_line_is_kept():
     assert text.startswith(f"/*! *****************\n * {SPDX}\n")
 
 
+def test_decorated_header_that_is_up_to_date_is_left_alone():
+    text = f"/*-------------\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n-------------*/\nselect 1;\n"
+
+    action, new_text = run("sql", text)
+
+    assert action == "none"
+    assert new_text == text
+
+
+def test_decoration_after_the_start_marker_is_kept():
+    action, text = run(
+        "java",
+        "/*-\n * Copyright (c) 2015 Enovation\n */\nclass A {}\n",
+        license={"enabled": False},
+    )
+
+    assert action == "update"
+    assert text == f"/*-\n * {SPDX}\n */\nclass A {{}}\n"
+
+
+def test_decoration_before_the_end_marker_is_kept():
+    action, text = run(
+        "sql",
+        "/*=====\n  Copyright (c) 2015 Enovation\n=====*/ select 1;\n",
+        license={"enabled": False},
+    )
+
+    assert action == "update"
+    assert text == f"/*=====\n  {SPDX}\n=====*/\nselect 1;\n"
+
+
+def test_rule_of_stars_before_the_end_marker_is_kept():
+    action, text = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n **/ class A {}\n",
+        license={"enabled": False},
+    )
+
+    assert action == "update"
+    assert text == f"/*\n * {SPDX}\n **/\nclass A {{}}\n"
+
+
+def test_empty_comment_becomes_the_header():
+    action, text = run("java", "/**/\nclass A {}\n", license={"enabled": False})
+
+    assert action == "add"
+    assert text == f"/*\n * {SPDX}\n *\n */\nclass A {{}}\n"
+
+
 def test_python_shebang_and_encoding_stay_on_top():
     action, text = run(
         "py", "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\nprint(1)\n"
