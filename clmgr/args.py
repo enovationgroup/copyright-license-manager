@@ -218,15 +218,20 @@ def validate_format(copyright_format):
     if copyright_format is None:
         return []
 
+    # A placeholder without a name, such as {}, has an empty name
     used = [
         name.split(".")[0].split("[")[0]
         for _, name, _, _ in Formatter().parse(copyright_format)
-        if name
+        if name is not None
     ]
 
     return [
-        f"format uses unknown placeholder '{name}', "
-        f"available are: {', '.join(placeholders)}"
+        (
+            f"format uses unknown placeholder '{name}', "
+            if name
+            else "format uses a placeholder without a name '{}', "
+        )
+        + f"available are: {', '.join(placeholders)}"
         for name in used
         if name not in placeholders
     ]

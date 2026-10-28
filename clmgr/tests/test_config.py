@@ -202,3 +202,21 @@ def test_search_region_must_be_at_least_one(capsys):
 
         assert excinfo.value.code == 2
     assert "--region" in capsys.readouterr().err
+
+
+def test_config_with_a_placeholder_without_a_name(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\nformat: 'Copyright {} {name}'\n" + VALID_LEGAL,
+        "format uses a placeholder without a name '{}'",
+        caplog,
+    )
+
+
+def test_config_with_a_numbered_placeholder(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - py\nformat: 'Copyright {0} {name}'\n" + VALID_LEGAL,
+        "format uses unknown placeholder '0'",
+        caplog,
+    )
