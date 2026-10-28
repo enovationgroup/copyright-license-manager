@@ -677,3 +677,34 @@ def test_copyright_beyond_the_search_region_is_not_reported(caplog):
     run("js", "foo();\n" * 12 + "// Copyright (c) 2010 X\n")
 
     assert WARNING not in caplog.text
+
+
+def test_copyright_after_a_single_line_header_is_reported(caplog):
+    """The region counts the lines of the file, before the header is split"""
+    run(
+        "java",
+        "/* Copyright (c) 2015 Enovation */ class A {\n"
+        + "  int a;\n" * 7
+        + "// Copyright (c) 2010 X\n}\n",
+    )
+
+    assert f'{WARNING}: "// Copyright (c) 2010 X"' in caplog.text
+
+
+def test_copyright_in_code_after_a_comment_is_not_reported(caplog):
+    run(
+        "java",
+        '/*\n * Copyright (c) 2015 Enovation\n */\n/* note */ String s = "Copyright";\n',
+    )
+
+    assert WARNING not in caplog.text
+
+
+def test_copyright_on_the_line_of_the_header_is_reported(caplog):
+    """Analyzed once, a second run would find the comment on a line of its own"""
+    cfg = apply_config_defaults({"source": ["html"], "legal": LEGAL})
+    source = "<!-- Copyright (c) 2015 Enovation --><!-- Copyright (c) 2010 X -->\n"
+
+    analyze(cfg, "html", [source], "file", parse_args([]))
+
+    assert f'{WARNING}: "<!-- Copyright (c) 2010 X -->"' in caplog.text
