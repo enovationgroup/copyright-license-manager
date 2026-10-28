@@ -110,6 +110,8 @@ MARKUP = {
     # Leading markup comments are often directives, such as
     # <!-- eslint-disable --> or conditional comments
     "copyright_only": True,
+    # The comments of a <script> or <style> element
+    "other_comments": [C_BLOCK, SLASH_LINES],
 }
 
 

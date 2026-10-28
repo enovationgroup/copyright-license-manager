@@ -613,6 +613,25 @@ def test_copyright_in_a_line_comment_is_reported_sql(caplog):
     assert f'{WARNING}: "-- Copyright (c) 2010 X"' in caplog.text
 
 
+def test_copyright_in_a_script_comment_is_reported(caplog):
+    action, text = run(
+        "vue",
+        '<script setup lang="ts">\n/*\n * Copyright (c) 2019 X\n */\n'
+        "// Copyright (c) 2020 Y\n</script>\n",
+    )
+
+    assert action == "add"
+    assert "-->\n<script setup" in text
+    assert f'{WARNING}: "* Copyright (c) 2019 X"' in caplog.text
+    assert f'{WARNING}: "// Copyright (c) 2020 Y"' in caplog.text
+
+
+def test_copyright_in_a_style_comment_is_reported(caplog):
+    run("html", "<style>\n  /* Copyright (c) 2019 X */\n</style>\n")
+
+    assert f'{WARNING}: "/* Copyright (c) 2019 X */"' in caplog.text
+
+
 def test_copyright_outside_an_updated_header_is_reported(caplog):
     action, _ = run(
         "java",
