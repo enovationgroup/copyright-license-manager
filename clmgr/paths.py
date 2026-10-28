@@ -11,6 +11,12 @@ from pathlib import Path, PurePath
 import re
 
 
+# Directories that never hold source files of the project, such as the
+# packages installed by npm. They are skipped at any depth, whatever the
+# include and exclude options are.
+SKIPPED_DIRECTORIES = ["node_modules"]
+
+
 @lru_cache(maxsize=None)
 def compile_glob(pattern):
     """Compile a glob pattern into a regular expression
@@ -137,7 +143,10 @@ def select_files(input_dir, ext, include, exclude):
 
         # Do not descend into excluded directories
         dirs[:] = sorted(
-            d for d in dirs if not matches(exclude, relative(relative_root, d))
+            d
+            for d in dirs
+            if d not in SKIPPED_DIRECTORIES
+            and not matches(exclude, relative(relative_root, d))
         )
 
         for name in sorted(files):

@@ -280,6 +280,10 @@ every file of a configured source extension is processed.
 
 A list of glob patterns to exclude files from processing.
 
+A `node_modules` directory is always skipped, at any depth and whatever the
+`include` and `exclude` options are: it holds the packages installed by npm,
+which carry the copyright of their authors.
+
 Patterns are matched against the path of a file relative to the input
 directory. A `*` matches within one directory, `**` matches across
 directories, and a pattern without a separator also matches a file name, a

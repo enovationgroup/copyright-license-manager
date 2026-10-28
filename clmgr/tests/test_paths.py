@@ -154,3 +154,18 @@ def test_select_files_applies_an_anchored_include(tmp_path):
     selected = select_files(tmp_path, "py", ["/src"], [])
 
     assert relative_names(tmp_path, selected) == ["src/a.py", "src/deep/b.py"]
+
+
+def test_select_files_skips_installed_packages(tmp_path):
+    for path in [
+        "src/app.js",
+        "node_modules/lodash/lodash.js",
+        "web/node_modules/a.js",
+    ]:
+        target = tmp_path / path
+        os.makedirs(target.parent, exist_ok=True)
+        target.write_text("foo();\n", encoding="utf-8")
+
+    selected = select_files(tmp_path, "js", ["**/*"], [])
+
+    assert relative_names(tmp_path, selected) == ["src/app.js"]
