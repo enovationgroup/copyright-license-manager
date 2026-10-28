@@ -496,10 +496,10 @@ def render_update(cfg, ext, offset, lines, args):
     out = lines[:offset]
     lines = lines[offset:]
 
-    divider = comments.get(ext).get("divider")
-
     # Detect header block (position-agnostic) within the configured region.
-    # The header is updated in the comment style it is written in.
+    # The header is updated in the comment style it is written in, including
+    # its divider. Legacy styles have no divider. The license markers always
+    # come from the extension, so a license is recognised in every style.
     header_style, header = detect_header(lines, ext, max_region=args.region)
     if header_style is None:
         header_style = comments.get(ext)
@@ -507,6 +507,7 @@ def render_update(cfg, ext, offset, lines, args):
     char = header_style["char"]
     line = header_style["line"]
     end = header_style["end"]
+    divider = header_style.get("divider", False)
 
     header_start_idx = None
     header_end_idx = None

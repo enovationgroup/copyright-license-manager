@@ -423,3 +423,12 @@ def test_comment_beyond_the_search_region_is_not_the_header():
     assert text == (
         f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n" + source
     )
+
+
+def test_legacy_header_is_updated_without_a_divider():
+    action, text = run("cs", "/* Copyright (c) 2010 Old */\nclass A {}\n")
+
+    assert action == "update"
+    assert text == (
+        f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n*/\nclass A {{}}\n"
+    )
