@@ -265,11 +265,13 @@ file type:
   statements are added to it
 
 Only the first comment of a file can be the header. When a copyright statement
-is found in any other comment that starts within the search region, including
-`//` comments in Java, C#, JavaScript, TypeScript, SCSS and LESS, `--`
-comments in SQL and the `/* */` and `//` comments of a `<script>` or `<style>`
-element in markup, clmgr leaves it unchanged and logs a warning, so the old
-statement can be removed by hand.
+is found in any other comment that starts within the search region, at the
+start of a line or directly after another comment, including `//` comments in
+Java, C#, JavaScript, TypeScript, SCSS and LESS, `--` comments in SQL and the
+`/* */` and `//` comments of a `<script>` or `<style>` element in markup, clmgr
+leaves it unchanged and logs a warning, so the old statement can be removed by
+hand. A comment that follows code or a tag on the same line, as in
+`var a; // Copyright`, is not checked.
 
 ##### include
 
