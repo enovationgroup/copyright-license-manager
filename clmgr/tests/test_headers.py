@@ -9,19 +9,33 @@ YEAR = datetime.datetime.now().year
 SPDX = f"SPDX-FileCopyrightText: Copyright (c) 2015 - {YEAR} [Enovation Group B.V. - Capelle aan den IJssel - NL]"
 
 
-def run(ext, text):
+LEGAL = [
+    {
+        "inception": 2015,
+        "name": "Enovation Group B.V.",
+        "locality": "Capelle aan den IJssel",
+        "country": "NL",
+    }
+]
+
+# Entities the copyright was transferred between, the last one holds it now
+TRANSFERS = [
+    {"inception": year, "name": name, "locality": "Rotterdam", "country": "NL"}
+    for year, name in [
+        (2005, "Mars Hospital"),
+        (2008, "Lunar Base"),
+        (2010, "Orbit Clinic"),
+        (2012, "Comet Care"),
+    ]
+] + LEGAL
+
+
+def run(ext, text, legal=None):
     """Analyze a file twice, the second run must not change anything"""
     cfg = apply_config_defaults(
         {
             "source": [ext],
-            "legal": [
-                {
-                    "inception": 2015,
-                    "name": "Enovation Group B.V.",
-                    "locality": "Capelle aan den IJssel",
-                    "country": "NL",
-                }
-            ],
+            "legal": legal or LEGAL,
             "license": {"enabled": True},
         }
     )
@@ -190,3 +204,39 @@ def test_first_comment_without_copyright_below_is_not_reported(caplog):
 
     assert action == "add"
     assert "not recognised as the header" not in caplog.text
+
+
+def test_more_legal_entities_than_copyright_lines_keep_the_license():
+    """The license moves down past the end of the header as it was before"""
+    action, text = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n *\n * ---\n * All rights reserved.\n"
+        " * ---\n */\nclass A {}\n",
+        TRANSFERS,
+    )
+
+    assert action == "update"
+    assert text == (
+        "/*\n"
+        " * SPDX-FileCopyrightText: Copyright (c) 2005 - 2008 [Mars Hospital - Rotterdam - NL]\n"
+        " * SPDX-FileCopyrightText: Copyright (c) 2008 - 2010 [Lunar Base - Rotterdam - NL]\n"
+        " * SPDX-FileCopyrightText: Copyright (c) 2010 - 2012 [Orbit Clinic - Rotterdam - NL]\n"
+        " * SPDX-FileCopyrightText: Copyright (c) 2012 - 2015 [Comet Care - Rotterdam - NL]\n"
+        f" * {SPDX}\n"
+        " *\n * ---\n * All rights reserved.\n * ---\n */\nclass A {}\n"
+    )
+
+
+def test_fewer_legal_entities_than_copyright_lines_add_the_license():
+    """The code below the header moves up into the header as it was before"""
+    action, text = run(
+        "html",
+        "<!--\n  Copyright (c) 2010 Mars Hospital\n  Copyright (c) 2012 Lunar Base\n"
+        "  Copyright (c) 2015 Enovation\n-->\n<pre>\n===\n</pre>\n",
+    )
+
+    assert action == "update"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n"
+        "<pre>\n===\n</pre>\n"
+    )
