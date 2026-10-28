@@ -7,7 +7,8 @@ import re
 SHEBANG = re.compile(r"#![^\n]*\n?")
 # PEP 263 requires the encoding declaration on the first or second line
 CODING = re.compile(r"[ \t\f]*#[^\n]*?coding[:=][^\n]*\n?")
-CHARSET = re.compile(r"@charset[^;\n]*;[^\n]*\n?")
+# The indented syntax of Sass has no semicolon after the rule
+CHARSET = re.compile(r"@charset[^\n]*\n?")
 XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
 # Whitespace is allowed in front of a doctype, it is kept above the header
 DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
@@ -21,8 +22,9 @@ DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
 C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
 
 # The indented syntax of Sass ends a /* comment at the first line that is not
-# indented, the closing */ is optional
-SASS_BLOCK = {**C_BLOCK, "indented": True}
+# indented, the closing */ is optional. A closing */ that clmgr writes must be
+# indented as well, at the start of a line it would be read as a new rule.
+SASS_BLOCK = {**C_BLOCK, "indented": True, "close": "  */"}
 
 # Comment styles, shared by every source extension that uses them
 JAVA = {

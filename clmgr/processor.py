@@ -226,6 +226,11 @@ def detect_header(lines, ext, max_region=None):
     return None, None
 
 
+def _closing(header_style):
+    """The end marker clmgr writes when it moves text off a comment line"""
+    return header_style.get("close", header_style["end"])
+
+
 def _split_header_start(line, header_style, single_line):
     """Move the text on the first line of a block comment to a line of its own.
 
@@ -273,7 +278,7 @@ def _split_header_start(line, header_style, single_line):
     if text != "":
         lines.append(indent + header_style["line"] + text + "\n")
     if single_line:
-        lines.append(indent + header_style["end"] + "\n")
+        lines.append(indent + _closing(header_style) + "\n")
         if after.strip() != "":
             lines.append(after.strip() + "\n")
 
@@ -305,7 +310,7 @@ def _split_header_end(line, header_style):
     lines = []
     if before.strip() != "":
         lines.append(before.rstrip() + "\n")
-    lines.append(header_style["end"] + "\n")
+    lines.append(_closing(header_style) + "\n")
     if after.strip() != "":
         lines.append(after.strip() + "\n")
 

@@ -70,7 +70,7 @@ def test_sass_block_header_is_updated_in_place():
 
     assert action == "update"
     assert text == (
-        f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n*/\n.a\n  b: c\n"
+        f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n  */\n.a\n  b: c\n"
     )
 
 
@@ -333,4 +333,16 @@ def test_python_header_below_shebang_is_updated():
     assert text == (
         "#!/usr/bin/env python\n"
         f"#\n# {SPDX}\n# ---\n# All rights reserved.\n# ---\n#\nprint(1)\n"
+    )
+
+
+def test_sass_closing_line_is_written_indented():
+    action, text = run(
+        "sass", "/*\n  note\n  Copyright (c) 2015 Enovation */\n.a\n  b: c\n"
+    )
+
+    assert action == "update"
+    assert text == (
+        f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n  note\n  */\n"
+        ".a\n  b: c\n"
     )
