@@ -30,13 +30,13 @@ TRANSFERS = [
 ] + LEGAL
 
 
-def run(ext, text, legal=None):
+def run(ext, text, legal=None, license=None):
     """Analyze a file twice, the second run must not change anything"""
     cfg = apply_config_defaults(
         {
             "source": [ext],
             "legal": legal or LEGAL,
-            "license": {"enabled": True},
+            "license": license or {"enabled": True},
         }
     )
     args = parse_args([])
@@ -346,3 +346,29 @@ def test_sass_closing_line_is_written_indented():
         f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n  note\n  */\n"
         ".a\n  b: c\n"
     )
+
+
+BANNER_START = "/*! " + "*" * 77 + "\n"
+BANNER_END = "*" * 78 + " */\n"
+
+
+def test_external_license_is_added_inside_the_header():
+    action, text = run(
+        "js",
+        BANNER_START + f"{SPDX}\n" + BANNER_END + "const a = 1;\n",
+        license={"enabled": True, "external": True},
+    )
+
+    assert action == "update"
+    assert text == BANNER_START + f"{SPDX}\n---\n---\n" + BANNER_END + "const a = 1;\n"
+
+
+def test_external_license_is_added_inside_the_header_java():
+    action, text = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n */\nclass A {}\n",
+        license={"enabled": True, "external": True},
+    )
+
+    assert action == "update"
+    assert text == f"/*\n * {SPDX}\n *\n * ---\n * ---\n */\nclass A {{}}\n"

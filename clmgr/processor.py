@@ -561,17 +561,15 @@ def render_update(cfg, ext, offset, lines, args):
             )
 
         if not license_detected:
-            insert_idx = idx + 1
+            license_lines = []
             if divider:
-                lines.insert(insert_idx, line_prefix.rstrip() + "\n")
-                insert_idx += 1
-            lines.insert(insert_idx, line_prefix + license_start + "\n")
+                license_lines.append(line_prefix.rstrip() + "\n")
+            license_lines.append(line_prefix + license_start + "\n")
             if cfg["license"]["external"] is False:
-                lines.insert(
-                    insert_idx + 1, line_prefix + cfg["license"]["content"] + "\n"
-                )
+                license_lines.append(line_prefix + cfg["license"]["content"] + "\n")
             # TODO: Read license file
-            lines.insert(insert_idx + 2, line_prefix + license_end + "\n")
+            license_lines.append(line_prefix + license_end + "\n")
+            lines[idx + 1 : idx + 1] = license_lines
 
     # Append all remaining lines
     out.extend(lines)
