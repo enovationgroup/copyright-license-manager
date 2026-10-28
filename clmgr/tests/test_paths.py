@@ -63,6 +63,14 @@ def test_a_leading_slash_matches_a_top_level_directory_only():
     assert not matches(["/build"], "a/build")
 
 
+def test_a_leading_slash_matches_the_files_in_a_directory():
+    assert matches(["/src"], "src/app.js")
+    assert matches(["/src"], "src/deep/app.js")
+    assert matches(["/src/deep"], "src/deep/app.js")
+    assert not matches(["/src"], "lib/src/app.js")
+    assert not matches(["/src"], "srcs/app.js")
+
+
 def build_tree(tmp_path):
     for path in ["src/a.py", "src/deep/b.py", "src/a.txt", "other/c.py", "build/d.py"]:
         target = tmp_path / path
@@ -136,3 +144,13 @@ def test_select_files_does_not_descend_into_an_anchored_directory(tmp_path):
 
     assert "build/d.py" not in relative_names(tmp_path, selected)
     assert "src/build/e.py" in relative_names(tmp_path, selected)
+
+
+def test_select_files_applies_an_anchored_include(tmp_path):
+    build_tree(tmp_path)
+    os.makedirs(tmp_path / "other/src")
+    (tmp_path / "other/src/e.py").write_text("x\n", encoding="utf-8")
+
+    selected = select_files(tmp_path, "py", ["/src"], [])
+
+    assert relative_names(tmp_path, selected) == ["src/a.py", "src/deep/b.py"]

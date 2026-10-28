@@ -72,8 +72,9 @@ def matches(patterns, path):
     without it having to spell out the full path.
 
     A pattern starting with a `/` is anchored to the input directory, as in a
-    `.gitignore` file: it only matches the whole relative path, so `/build`
-    matches the top level build directory only.
+    `.gitignore` file: it matches the whole relative path or one of the
+    directories leading to it, counted from the input directory. So `/src`
+    matches every file in the top level src directory, but not in `lib/src`.
 
     Parameters
     ----------
@@ -92,11 +93,14 @@ def matches(patterns, path):
 
     pure = PurePath(path)
     candidates = [pure.as_posix(), pure.name, pure.stem] + list(pure.parts)
+    anchored = [pure.as_posix()] + [
+        PurePath(*pure.parts[:depth]).as_posix() for depth in range(1, len(pure.parts))
+    ]
 
     for pattern in patterns:
         if pattern.startswith("/"):
             regex = compile_glob(pattern.lstrip("/"))
-            if regex.match(candidates[0]):
+            if any(regex.match(candidate) for candidate in anchored):
                 return True
             continue
 

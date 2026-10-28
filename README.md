@@ -276,11 +276,13 @@ directory. A `*` matches within one directory, `**` matches across
 directories, and a pattern without a separator also matches a file name, a
 file name without its extension, or a directory anywhere in the tree. A
 pattern starting with a `/` is anchored to the input directory, as in a
-`.gitignore` file:
+`.gitignore` file. It matches a file or a directory with everything in it,
+counted from the input directory:
 
 ```yaml
 include:
   - "src/**/*"      # every file under src, at any depth
+  - /web            # every file in the web directory at the top, not in lib/web
 exclude:
   - "**/*.min.js"   # minified files anywhere
   - build           # any directory named build
