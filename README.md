@@ -239,8 +239,9 @@ contain `--` while a markup source is configured:
 ```
 
 Lines that must stay at the top of a file are left in place and the header is
-placed below them: a shebang (`#!`) in JavaScript and TypeScript, a `@charset`
-rule in stylesheets, and an XML declaration or doctype in HTML. A byte order
+placed below them: a shebang (`#!`) in JavaScript, TypeScript and Python, an
+encoding declaration (`# -*- coding: utf-8 -*-`) in Python, a `@charset` rule
+in stylesheets, and an XML declaration or doctype in HTML. A byte order
 mark always stays in front of the file.
 
 An existing `/* */` header that holds a copyright statement is updated in

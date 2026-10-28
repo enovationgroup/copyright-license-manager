@@ -310,3 +310,27 @@ def test_rule_of_stars_on_the_first_line_is_kept():
 
     assert action == "update"
     assert text.startswith(f"/*! *****************\n * {SPDX}\n")
+
+
+def test_python_shebang_and_encoding_stay_on_top():
+    action, text = run(
+        "py", "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\nprint(1)\n"
+    )
+
+    assert action == "add"
+    assert text == (
+        "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n"
+        f"#\n# {SPDX}\n# ---\n# All rights reserved.\n# ---\n#\nprint(1)\n"
+    )
+
+
+def test_python_header_below_shebang_is_updated():
+    action, text = run(
+        "py", "#!/usr/bin/env python\n#\n# Copyright (c) 2015 Enovation\n#\nprint(1)\n"
+    )
+
+    assert action == "update"
+    assert text == (
+        "#!/usr/bin/env python\n"
+        f"#\n# {SPDX}\n# ---\n# All rights reserved.\n# ---\n#\nprint(1)\n"
+    )

@@ -5,6 +5,8 @@ import re
 # Lines that must stay at the very top of a file, above the copyright header.
 # Every pattern consumes whole lines, starting at the beginning of a line.
 SHEBANG = re.compile(r"#![^\n]*\n?")
+# PEP 263 requires the encoding declaration on the first or second line
+CODING = re.compile(r"[ \t\f]*#[^\n]*?coding[:=][^\n]*\n?")
 CHARSET = re.compile(r"@charset[^;\n]*;[^\n]*\n?")
 XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
 # Whitespace is allowed in front of a doctype, it is kept above the header
@@ -125,7 +127,7 @@ comments = {
     "java": style(JAVA),
     "ts": style(BANNER, [SHEBANG]),
     "cs": style(CSHARP),
-    "py": style(HASH),
+    "py": style(HASH, [SHEBANG, CODING]),
     "sql": style(SQL),
     # JavaScript. Runtimes such as Bun and tsx also run jsx and tsx files as
     # scripts, and a first line starting with #! cannot be anything else.

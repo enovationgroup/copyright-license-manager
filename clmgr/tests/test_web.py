@@ -49,7 +49,25 @@ def test_prologue_without_prologue():
 
 
 def test_prologue_not_configured():
-    lines = ["#!/usr/bin/env python\n", "print('test')\n"]
+    lines = ["#!/usr/bin/env dotnet\n", "using System;\n"]
+
+    assert count_prologue_lines(lines, comments["cs"]["prologue"]) == 0
+
+
+def test_prologue_python_shebang_and_encoding():
+    lines = ["#!/usr/bin/env python\n", "# -*- coding: utf-8 -*-\n", "# note\n"]
+
+    assert count_prologue_lines(lines, comments["py"]["prologue"]) == 2
+
+
+def test_prologue_python_encoding_without_shebang():
+    lines = ["# vim: set fileencoding=utf-8 :\n", "print('test')\n"]
+
+    assert count_prologue_lines(lines, comments["py"]["prologue"]) == 1
+
+
+def test_prologue_python_comment_is_not_an_encoding():
+    lines = ["# Copyright (c) 2015 Enovation\n", "print('test')\n"]
 
     assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
 
