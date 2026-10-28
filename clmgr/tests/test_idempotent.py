@@ -8,7 +8,7 @@ import pytest
 
 from clmgr.main import main
 from clmgr.template import sources
-from clmgr.tests.test_base import test_dir
+from clmgr.tests.test_base import assert_source_configured, test_dir
 
 # Scenarios whose name differs from their configuration file
 CONFIGS = {
@@ -47,5 +47,6 @@ def test_second_run_changes_nothing(path):
     assert os.path.exists(
         config
     ), f"no configuration for scenario '{name}', add it to CONFIGS"
+    assert_source_configured(config, path)
 
     assert main(["-c", config, "--file", path, "--check"]) == 0
