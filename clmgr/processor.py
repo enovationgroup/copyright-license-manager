@@ -97,7 +97,7 @@ def _infer_line_prefix_from_header_body(header_body_lines, char, fallback_line_p
 def _find_header_block(
     lines, start, end, max_region=None, max_header_lines=500, indented=False
 ):
-    """Find the first top-of-file header block.
+    """Find the first comment of a file, the candidate for its header.
 
     Returns a tuple: (start_idx, end_idx, body_lines, end_line)
     - start_idx/end_idx are indices in `lines` (inclusive)
@@ -139,7 +139,7 @@ def _find_header_block(
         body = lines[first_idx : end_idx + 1]
         return first_idx, end_idx, body, None
 
-    # Block comment style (java/cs/sql/ts): find the terminating marker.
+    # Block comment style: find the terminating marker.
     # Handle `/* ... */` on a single line.
     if end in first_line and first_line.lstrip().startswith(start):
         # Preserve any content after the start token and before end token as body.

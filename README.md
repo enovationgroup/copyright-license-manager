@@ -212,8 +212,9 @@ The comment style of the header depends on the file type:
 Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
 keep `/*!` comments by default, but a build tool may still move them to a
 separate file or leave them out. See [Build output](#build-output). The
-indented Sass syntax only supports line comments for a header, which are not
-written to the compiled CSS.
+indented Sass syntax ends a `/*` comment at the first line that is not
+indented, so new headers in `.sass` files use `//` line comments instead of the
+banner. Line comments are not written to the compiled CSS.
 
 ```scss
 /*! *****************************************************************************

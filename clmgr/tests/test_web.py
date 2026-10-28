@@ -1,3 +1,5 @@
+import pytest
+
 from clmgr.args import apply_config_defaults, parse_args
 from clmgr.template import comments
 from clmgr.processor import analyze, count_prologue_lines
@@ -30,16 +32,20 @@ def test_prologue_xml_declaration_html():
     run_test_config("default/html/", "prologue-xml.html", "default/single.yml")
 
 
-def test_single_extensions():
-    for ext in ["mjs", "cjs", "jsx", "tsx", "less", "htm", "vue", "svelte"]:
-        run_test_config(f"default/{ext}/", f"single.{ext}", "default/single.yml")
+# Extensions that share their comment style with a fully tested extension
+SHARED_STYLE_EXTENSIONS = ["mjs", "cjs", "jsx", "tsx", "less", "htm", "vue", "svelte"]
 
 
-def test_single_update_extensions():
-    for ext in ["mjs", "cjs", "jsx", "tsx", "less", "htm", "vue", "svelte"]:
-        run_test_config(
-            f"default/{ext}/", f"single-update.{ext}", "default/single.update.yml"
-        )
+@pytest.mark.parametrize("ext", SHARED_STYLE_EXTENSIONS)
+def test_single_extensions(ext):
+    run_test_config(f"default/{ext}/", f"single.{ext}", "default/single.yml")
+
+
+@pytest.mark.parametrize("ext", SHARED_STYLE_EXTENSIONS)
+def test_single_update_extensions(ext):
+    run_test_config(
+        f"default/{ext}/", f"single-update.{ext}", "default/single.update.yml"
+    )
 
 
 def test_prologue_without_prologue():
@@ -145,6 +151,9 @@ def test_comment_styles_do_not_share_state():
             assert comment is not other
             assert comment["license"] is not other["license"]
             assert comment["prologue"] is not other["prologue"]
+            assert comment["legacy"] is not other["legacy"]
+            for legacy in comment["legacy"]:
+                assert all(legacy is not shared for shared in other["legacy"])
 
 
 def test_markup_styles():

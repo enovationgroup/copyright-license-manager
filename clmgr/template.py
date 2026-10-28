@@ -14,11 +14,11 @@ XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
 DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
 
 # Block comments that are recognised as an existing header, in files that use
-# a different comment style for new headers. They only describe how to find a
+# a different comment style for new headers. They are only recognised when they
+# hold a copyright statement, so a leading pragma or documentation comment is
+# never mistaken for the header. They only describe how to find and update a
 # header, so they have no license or divider settings and are not passed to
-# style(). They are only recognised when
-# they hold a copyright statement, so a leading pragma or documentation
-# comment is never mistaken for the header.
+# style().
 C_BLOCK = {"start": "/*", "char": "*", "line": "  ", "end": "*/"}
 
 # The indented syntax of Sass ends a /* comment at the first line that is not
@@ -142,8 +142,8 @@ comments = {
     "css": style(BANNER, [CHARSET]),
     "scss": style(BANNER, [CHARSET]),
     "less": style(BANNER, [CHARSET]),
-    # The indented syntax ends a /* comment at the first line that is not
-    # indented, so it can only use line comments.
+    # New headers use line comments: the indented syntax ends a /* comment at
+    # the first line that is not indented, which the banner layout is not.
     "sass": style(SASS, [CHARSET]),
     # Markup
     "html": style(MARKUP, [XML_DECLARATION, DOCTYPE]),

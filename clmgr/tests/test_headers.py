@@ -1,4 +1,4 @@
-"""Regression tests for headers that are not in the comment style of new headers"""
+"""Regression tests for existing headers and leading comments in unusual layouts"""
 
 import datetime
 
@@ -444,3 +444,10 @@ def test_copyright_below_first_comment_is_reported_java(caplog):
         " * eslint-disable\n */\n/* Copyright (c) 2015 Enovation */\nclass A {}\n"
     )
     assert "not recognised as the header and is left unchanged" in caplog.text
+
+
+def test_plain_block_header_is_updated_in_place_typescript():
+    action, text = run("ts", "/* Copyright (c) 2015 Enovation */\nlet a;\n")
+
+    assert action == "update"
+    assert text == f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n*/\nlet a;\n"

@@ -194,7 +194,7 @@ def validate_config(cfg, config_file):
 
         # The copyright statements can only be rendered from a valid format
         # and complete legal entities, the license content is always checked
-        errors.extend(validate_markup(cfg, copyright=not rendering_errors))
+        errors.extend(validate_markup(cfg, check_copyright=not rendering_errors))
 
     if errors:
         for error in errors:
@@ -232,7 +232,7 @@ def validate_format(copyright_format):
     ]
 
 
-def validate_markup(cfg, copyright=True):
+def validate_markup(cfg, check_copyright=True):
     """Verify that the header text can be written into a markup comment
 
     A markup comment such as <!-- --> must not contain "--", so neither the
@@ -243,7 +243,7 @@ def validate_markup(cfg, copyright=True):
     ----------
     cfg
         Parsed configuration
-    copyright
+    check_copyright
         Whether to check the copyright statements, which requires a valid
         format and complete legal entities to render them
 
@@ -261,7 +261,7 @@ def validate_markup(cfg, copyright=True):
 
     errors = []
     copyright_format = cfg.get("format") or DEFAULT_FORMAT
-    legal = cfg["legal"] if copyright else []
+    legal = cfg["legal"] if check_copyright else []
     for idx, entity in enumerate(legal):
         statement = template(
             copyright_format,
