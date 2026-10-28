@@ -57,7 +57,7 @@ Options:
 | `-c, --config FILE` | `copyright.yml`           | Path to the configuration file                                   |
 | `-i, --file FILE`   | None                      | Path to a single input file to process                           |
 | `-d, --dir DIR`     | Current working directory | Input directory to process                                       |
-| `--region REGION`   | `10`                      | Copyright search region                                          |
+| `--region REGION`   | `10`                      | Number of lines the header must start in, at least `1`           |
 | `-n, --dry-run`     | false                     | Report which files would change without writing them             |
 | `--check`           | false                     | Implies `--dry-run`; exit with `1` when a file would change      |
 | `--diff`            | false                     | Print a unified diff for every file that is changed              |

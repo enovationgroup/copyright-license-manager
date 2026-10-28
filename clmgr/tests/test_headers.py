@@ -412,3 +412,14 @@ def test_multi_line_license_in_a_block_comment():
         f"/*\n * {SPDX}\n *\n * ---\n * Licensed under the MIT License.\n *\n"
         " * See LICENSE for details.\n * ---\n *\n */\nclass A {}\n"
     )
+
+
+def test_comment_beyond_the_search_region_is_not_the_header():
+    source = "\n" * 12 + "<!--\n  Copyright 2019 X\n-->\n<div></div>\n"
+
+    action, text = run("html", source)
+
+    assert action == "add"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n" + source
+    )

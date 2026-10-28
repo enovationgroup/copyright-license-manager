@@ -24,6 +24,14 @@ DEFAULT_FORMAT = (
 )
 
 
+def positive_int(value):
+    """Parse a commandline value that must be a whole number of at least 1"""
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, got {value}")
+    return number
+
+
 def parse_args(args):
     # Create argument parser
     def formatter_class(prog):
@@ -46,7 +54,7 @@ def parse_args(args):
     parser.add_argument(
         "--region",
         help="Copyright search region; default=10",
-        type=int,
+        type=positive_int,
         default=10,
         metavar="REGION",
     )

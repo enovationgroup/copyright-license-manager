@@ -127,10 +127,11 @@ def _find_header_block(
     if not first_line.lstrip().startswith(start):
         return None
 
-    # Single-line comment style (py/sh): header is a run of comment lines.
+    # Line comment style (py/sass): header is a run of comment lines. The
+    # region limits where the header starts, not how long it is.
     if start == end:
         end_idx = first_idx
-        for idx in range(first_idx, start_search_upto):
+        for idx in range(first_idx, min(len(lines), first_idx + max_header_lines)):
             if lines[idx].lstrip().startswith(start):
                 end_idx = idx
             else:
@@ -348,7 +349,7 @@ def _is_marker(line, marker, char):
     return text == marker
 
 
-def render_insert(cfg, ext, offset, lines):
+def render_insert(cfg, ext, offset, lines, max_region=None):
     """Render the file contents with a new copyright header inserted.
 
     Parameters
@@ -361,6 +362,8 @@ def render_insert(cfg, ext, offset, lines):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
+    max_region
+        Number of lines an existing header must start in, as in `analyze`
 
     Returns
     -------
@@ -384,7 +387,7 @@ def render_insert(cfg, ext, offset, lines):
     license_end = comments.get(ext).get("license").get("end")
 
     # Detect an existing header block at the top of the file (position-agnostic)
-    header = _find_header_block(lines, start, end)
+    header = _find_header_block(lines, start, end, max_region=max_region)
 
     # A markup comment without a copyright, such as a directive, is left as it
     # is and the header is written above it
@@ -658,7 +661,7 @@ def analyze(cfg, ext, lines, path, args):
 
         if header is None or not _has_copyright(header[2]):
             action = "add"
-            new_lines = render_insert(cfg, ext, offset, lines)
+            new_lines = render_insert(cfg, ext, offset, lines, args.region)
 
             # Only the first comment of a file can be the header, a copyright
             # in a comment below it is not updated

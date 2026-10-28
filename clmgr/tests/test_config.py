@@ -2,7 +2,7 @@ import shutil
 
 import pytest
 
-from clmgr.args import apply_config_defaults, read_config, validate_config
+from clmgr.args import apply_config_defaults, parse_args, read_config, validate_config
 from clmgr.main import main
 from clmgr.tests.test_base import test_dir
 
@@ -193,3 +193,12 @@ def test_config_with_double_dash_in_a_license_that_is_not_written(tmp_path):
         )
 
         validate_config(read_config(config_file), config_file)
+
+
+def test_search_region_must_be_at_least_one(capsys):
+    for region in ["0", "-1", "ten"]:
+        with pytest.raises(SystemExit) as excinfo:
+            parse_args(["--region", region])
+
+        assert excinfo.value.code == 2
+    assert "--region" in capsys.readouterr().err
