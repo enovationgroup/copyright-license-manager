@@ -240,3 +240,48 @@ def test_fewer_legal_entities_than_copyright_lines_add_the_license():
         f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n-->\n"
         "<pre>\n===\n</pre>\n"
     )
+
+
+def test_text_starting_with_a_star_is_kept():
+    action, text = run(
+        "java",
+        "/* *Important* note\n * Copyright (c) 2015 Enovation\n */\nclass A {}\n",
+    )
+
+    assert action == "update"
+    assert text == (
+        f"/*\n * {SPDX}\n *\n * ---\n * All rights reserved.\n * ---\n"
+        " * *Important* note\n */\nclass A {}\n"
+    )
+
+
+def test_text_starting_with_an_exclamation_mark_is_kept():
+    action, text = run(
+        "html",
+        "<!-- !Important note\n  Copyright (c) 2015 Enovation\n-->\n<div></div>\n",
+    )
+
+    assert action == "update"
+    assert text == (
+        f"<!--\n  {SPDX}\n  ===\n  All rights reserved.\n  ===\n"
+        "  !Important note\n-->\n<div></div>\n"
+    )
+
+
+def test_marker_of_a_doc_comment_is_kept():
+    action, text = run(
+        "java", "/** Copyright (c) 2015 Enovation\n * note\n */\nclass A {}\n"
+    )
+
+    assert action == "update"
+    assert text.startswith(f"/**\n * {SPDX}\n")
+
+
+def test_rule_of_stars_on_the_first_line_is_kept():
+    action, text = run(
+        "cs",
+        "/*! *****************\n * Copyright (c) 2015 Enovation\n */\nclass A {}\n",
+    )
+
+    assert action == "update"
+    assert text.startswith(f"/*! *****************\n * {SPDX}\n")

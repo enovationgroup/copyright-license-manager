@@ -251,19 +251,24 @@ def _split_header_start(line, header_style, single_line):
     stripped = line.lstrip()
     indent = line[: len(line) - len(stripped)]
     rest = stripped[len(start) :]
-    # Keep the marker of /*! and /** comments, and the rule of a banner
-    marker = re.match(r"[!* \t]*", rest).group(0).rstrip()
+    # Keep the marker of /*! and /** comments, it directly follows the start
+    marker = re.match(r"[!*]*", rest).group(0)
     rest = rest[len(marker) :]
 
     after = ""
     if single_line:
         rest, _, after = rest.partition(end)
-    elif rest.strip() == "":
-        return [line]
+
+    # A rule of stars, as in a banner, is not text that has to be moved
+    text = rest.strip()
+    if set(text) <= {"*"}:
+        text = ""
+        if not single_line:
+            return [line]
 
     lines = [indent + start + marker + "\n"]
-    if rest.strip() != "":
-        lines.append(indent + header_style["line"] + rest.strip() + "\n")
+    if text != "":
+        lines.append(indent + header_style["line"] + text + "\n")
     if single_line:
         lines.append(indent + header_style["end"] + "\n")
         if after.strip() != "":
