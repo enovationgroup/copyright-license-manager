@@ -327,6 +327,19 @@ def _leading_comment_end(lines, ext, max_region):
     return None
 
 
+def _license_content(cfg, line_prefix):
+    """The license content as header lines.
+
+    The content may span several lines. Every line gets the line prefix, so
+    it stays inside a header of line comments, and an empty line gets the
+    prefix without its trailing whitespace.
+    """
+    return [
+        line_prefix + text + "\n" if text.strip() != "" else line_prefix.rstrip() + "\n"
+        for text in cfg["license"]["content"].splitlines()
+    ]
+
+
 def _is_marker(line, marker, char):
     """Whether a header line consists of nothing but a license marker"""
     text = line.strip()
@@ -430,7 +443,7 @@ def render_insert(cfg, ext, offset, lines):
         if license_start != "":
             out.append(line_prefix + license_start + "\n")
         if cfg["license"]["external"] is False:
-            out.append(line_prefix + cfg["license"]["content"] + "\n")
+            out.extend(_license_content(cfg, line_prefix))
         # TODO: Read license file
         if license_end != "":
             out.append(line_prefix + license_end + "\n")
@@ -566,7 +579,7 @@ def render_update(cfg, ext, offset, lines, args):
                 license_lines.append(line_prefix.rstrip() + "\n")
             license_lines.append(line_prefix + license_start + "\n")
             if cfg["license"]["external"] is False:
-                license_lines.append(line_prefix + cfg["license"]["content"] + "\n")
+                license_lines.extend(_license_content(cfg, line_prefix))
             # TODO: Read license file
             license_lines.append(line_prefix + license_end + "\n")
             lines[idx + 1 : idx + 1] = license_lines

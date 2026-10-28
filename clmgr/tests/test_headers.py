@@ -372,3 +372,43 @@ def test_external_license_is_added_inside_the_header_java():
 
     assert action == "update"
     assert text == f"/*\n * {SPDX}\n *\n * ---\n * ---\n */\nclass A {{}}\n"
+
+
+MULTI_LINE_LICENSE = {
+    "enabled": True,
+    "content": "Licensed under the MIT License.\n\nSee LICENSE for details.\n",
+}
+
+
+def test_multi_line_license_stays_inside_line_comments():
+    action, text = run("sass", ".a\n  b: c\n", license=MULTI_LINE_LICENSE)
+
+    assert action == "add"
+    assert text == (
+        f"//\n// {SPDX}\n// ---\n// Licensed under the MIT License.\n//\n"
+        "// See LICENSE for details.\n// ---\n//\n.a\n  b: c\n"
+    )
+
+
+def test_multi_line_license_is_added_to_an_existing_header():
+    action, text = run(
+        "py",
+        "#\n# Copyright (c) 2015 Enovation\n#\nprint(1)\n",
+        license=MULTI_LINE_LICENSE,
+    )
+
+    assert action == "update"
+    assert text == (
+        f"#\n# {SPDX}\n# ---\n# Licensed under the MIT License.\n#\n"
+        "# See LICENSE for details.\n# ---\n#\nprint(1)\n"
+    )
+
+
+def test_multi_line_license_in_a_block_comment():
+    action, text = run("java", "class A {}\n", license=MULTI_LINE_LICENSE)
+
+    assert action == "add"
+    assert text == (
+        f"/*\n * {SPDX}\n *\n * ---\n * Licensed under the MIT License.\n *\n"
+        " * See LICENSE for details.\n * ---\n *\n */\nclass A {}\n"
+    )
