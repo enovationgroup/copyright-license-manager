@@ -7,7 +7,7 @@ import re
 import shutil
 import tempfile
 
-from clmgr.template import template, comments
+from clmgr.template import comments, statements
 
 log = logging.getLogger("root")
 
@@ -396,6 +396,11 @@ def _copyrights_outside_header(lines, ext, header, max_region):
     return found
 
 
+def _statements(cfg):
+    """The copyright statements of the configuration, up to the current year"""
+    return statements(cfg["format"], cfg["legal"], datetime.datetime.now().year)
+
+
 def _license_content(cfg, line_prefix):
     """The license content as header lines.
 
@@ -489,24 +494,8 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
         line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
 
     out.append(start + "\n")
-    legal_entities = cfg["legal"]
-    legal_entities_idx = 0
-    for legal in legal_entities:
-        year = datetime.datetime.now().year
-
-        if legal_entities_idx < len(legal_entities) - 1:
-            year = legal_entities[legal_entities_idx + 1]["inception"]
-
-        tmpl = template(
-            cfg["format"],
-            legal["inception"],
-            year,
-            legal["name"],
-            legal["locality"],
-            legal["country"],
-        )
-        out.append(line_prefix + tmpl + "\n")
-        legal_entities_idx += 1
+    for statement in _statements(cfg):
+        out.append(line_prefix + statement + "\n")
 
     if divider:
         out.append(line_prefix.rstrip() + "\n")
@@ -545,7 +534,7 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     return out
 
 
-def render_update(cfg, ext, offset, lines, args):
+def render_update(cfg, ext, offset, lines, max_region=None):
     """Render the file contents with the existing copyright header updated.
 
     Parameters
@@ -558,8 +547,8 @@ def render_update(cfg, ext, offset, lines, args):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
-    args
-        Parsed commandline arguments
+    max_region
+        Number of lines the header must start in, as in `analyze`
 
     Returns
     -------
@@ -573,7 +562,7 @@ def render_update(cfg, ext, offset, lines, args):
     # The header is updated in the comment style it is written in, including
     # its divider. Legacy styles have no divider. The license markers always
     # come from the extension, so a license is recognised in every style.
-    header_style, header = detect_header(lines, ext, max_region=args.region)
+    header_style, header = detect_header(lines, ext, max_region=max_region)
     if header_style is None:
         header_style = comments.get(ext)
     start = header_style["start"]
@@ -616,22 +605,8 @@ def render_update(cfg, ext, offset, lines, args):
     elif header_start_idx is not None:
         insert_at = header_start_idx
 
-    for lid in range(len(legal_entities)):
-        legal = legal_entities[lid]
-        year = datetime.datetime.now().year
-
-        if lid < len(legal_entities) - 1:
-            year = legal_entities[lid + 1]["inception"]
-
-        tmpl = template(
-            cfg["format"],
-            legal["inception"],
-            year,
-            legal["name"],
-            legal["locality"],
-            legal["country"],
-        )
-        lines.insert(insert_at + lid, line_prefix + tmpl + "\n")
+    for lid, statement in enumerate(_statements(cfg)):
+        lines.insert(insert_at + lid, line_prefix + statement + "\n")
         idx = insert_at + lid
 
     # Detect license block
@@ -739,7 +714,7 @@ def analyze(cfg, ext, lines, path, args):
 
         else:
             action = "update"
-            new_lines = render_update(cfg, ext, offset, lines, args)
+            new_lines = render_update(cfg, ext, offset, lines, args.region)
 
         # Only the header is updated, a copyright in any other comment is left
         # as it is

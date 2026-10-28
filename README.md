@@ -42,7 +42,7 @@ Options:
 -c, --config FILE     Path to the configuration file (default: copyright.yml)
 -d, --dir DIR         Input directory to process (default: current working directory)
 -i, --file FILE       Process a single input file
---region REGION       Copyright search region (default: 10)
+--region REGION       Number of lines the header must start in (default: 10)
 -n, --dry-run         Report which files would change without writing them
 --check               Implies --dry-run; exit with 1 when a file would change
 --diff                Print a unified diff for every file that is changed
@@ -63,6 +63,9 @@ Options:
 | `--diff`            | false                     | Print a unified diff for every file that is changed              |
 | `--debug`           | false                     | Enable verbose logging                                           |
 | `--version`         | N/A                       | Show version information and exit                                |
+
+The search region is counted from the first line below the lines that must stay
+at the top of a file, such as a shebang or a doctype.
 
 ### Dry run
 
@@ -136,8 +139,9 @@ generated again on every build. Leave the build directory out with an
 
 The headers of the source files do not reliably end up in the bundles:
 
-- Angular moves license comments to `3rdpartylicenses.txt` when
-  `extractLicenses` is enabled, which is the default for production builds
+- Angular handles license comments differently when `extractLicenses` is
+  enabled, which is the default for production builds: check whether your
+  headers are still in the bundles of your build
 - The terser plugin of webpack moves them to a separate `*.LICENSE.txt` file
   by default
 - Where they are kept, a bundle contains the same header once for every source

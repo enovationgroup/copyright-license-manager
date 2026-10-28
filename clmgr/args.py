@@ -8,7 +8,7 @@ import sys
 import yaml
 
 from clmgr.__version__ import get_versions
-from clmgr.template import comments, licenses, placeholders, sources, template
+from clmgr.template import comments, licenses, placeholders, sources, statements
 
 log = logging.getLogger("root")
 
@@ -26,7 +26,10 @@ DEFAULT_FORMAT = (
 
 def positive_int(value):
     """Parse a commandline value that must be a whole number of at least 1"""
-    number = int(value)
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"must be a whole number, got '{value}'")
     if number < 1:
         raise argparse.ArgumentTypeError(f"must be at least 1, got {value}")
     return number
@@ -53,7 +56,8 @@ def parse_args(args):
     )
     parser.add_argument(
         "--region",
-        help="Copyright search region; default=10",
+        help="Number of lines the header must start in, after a shebang or other "
+        "lines that stay on top; default=10",
         type=positive_int,
         default=10,
         metavar="REGION",
@@ -274,15 +278,7 @@ def validate_markup(cfg, check_copyright=True):
     errors = []
     copyright_format = cfg.get("format") or DEFAULT_FORMAT
     legal = cfg["legal"] if check_copyright else []
-    for idx, entity in enumerate(legal):
-        statement = template(
-            copyright_format,
-            entity["inception"],
-            entity["inception"],
-            entity["name"],
-            entity["locality"],
-            entity["country"],
-        )
+    for idx, statement in enumerate(statements(copyright_format, legal, 0)):
         if "--" in statement:
             errors.append(
                 f"copyright of legal entity [{idx}] contains '--', "

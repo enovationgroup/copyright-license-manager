@@ -181,6 +181,41 @@ sources = list(comments)
 placeholders = ["inception", "year", "name", "locality", "country"]
 
 
+def statements(copyright_format, legal_entities, year):
+    """Format the copyright statement of every legal entity
+
+    The copyright of an entity ends in the inception year of the entity that
+    follows it, the copyright of the last entity ends in the given year.
+
+    Parameters
+    ----------
+    copyright_format
+        The format of a copyright statement
+    legal_entities
+        The legal entities of the configuration, oldest first
+    year
+        The year the copyright of the last entity ends in
+
+    Returns
+    -------
+        The copyright statements, in the order of the legal entities
+
+    """
+    ends = [entity["inception"] for entity in legal_entities[1:]] + [year]
+
+    return [
+        template(
+            copyright_format,
+            entity["inception"],
+            end,
+            entity["name"],
+            entity["locality"],
+            entity["country"],
+        )
+        for entity, end in zip(legal_entities, ends)
+    ]
+
+
 # format the copyright statement
 def template(copyright_format, inception, year, name, locality, country):
     return copyright_format.format(
