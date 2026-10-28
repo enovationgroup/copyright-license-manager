@@ -673,7 +673,7 @@ def analyze(cfg, ext, lines, path, args):
                 if later is not None and _has_copyright(below[later[0] : later[1] + 1]):
                     log.warning(
                         f"{path}: the copyright below the first comment is not "
-                        "recognised as the header, a new header is added above"
+                        "recognised as the header and is left unchanged"
                     )
         else:
             action = "update"

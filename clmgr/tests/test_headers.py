@@ -221,7 +221,7 @@ def test_copyright_below_first_comment_is_reported(caplog):
     )
 
     assert action == "add"
-    assert "not recognised as the header" in caplog.text
+    assert "not recognised as the header and is left unchanged" in caplog.text
 
 
 def test_first_comment_without_copyright_below_is_not_reported(caplog):
@@ -432,3 +432,15 @@ def test_legacy_header_is_updated_without_a_divider():
     assert text == (
         f"/*\n  {SPDX}\n  ---\n  All rights reserved.\n  ---\n*/\nclass A {{}}\n"
     )
+
+
+def test_copyright_below_first_comment_is_reported_java(caplog):
+    action, text = run(
+        "java", "/* eslint-disable */\n/* Copyright (c) 2015 Enovation */\nclass A {}\n"
+    )
+
+    assert action == "add"
+    assert text.endswith(
+        " * eslint-disable\n */\n/* Copyright (c) 2015 Enovation */\nclass A {}\n"
+    )
+    assert "not recognised as the header and is left unchanged" in caplog.text

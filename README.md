@@ -260,8 +260,8 @@ file type:
   statements are added to it
 
 Only the first comment of a file can be the header. When a copyright statement
-is found in a comment below it, clmgr adds a new header and logs a warning, so
-the old statement can be removed by hand.
+is found in a comment below it, clmgr leaves that comment unchanged and logs a
+warning, so the old statement can be removed by hand.
 
 ##### include
 
