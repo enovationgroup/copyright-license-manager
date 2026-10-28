@@ -133,3 +133,10 @@ def test_markup_styles():
     markup = {ext for ext, comment in comments.items() if comment["markup"]}
 
     assert markup == {"html", "htm", "vue", "svelte"}
+
+
+def test_prologue_shebang_for_every_script_extension():
+    lines = ["#!/usr/bin/env bun\n", "console.log('test');\n"]
+
+    for ext in ["ts", "js", "mjs", "cjs", "jsx", "tsx"]:
+        assert count_prologue_lines(lines, comments[ext]["prologue"]) == 1, ext

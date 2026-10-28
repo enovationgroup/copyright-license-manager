@@ -127,12 +127,13 @@ comments = {
     "cs": style(CSHARP),
     "py": style(HASH),
     "sql": style(SQL),
-    # JavaScript
+    # JavaScript. Runtimes such as Bun and tsx also run jsx and tsx files as
+    # scripts, and a first line starting with #! cannot be anything else.
     "js": style(BANNER, [SHEBANG]),
     "mjs": style(BANNER, [SHEBANG]),
     "cjs": style(BANNER, [SHEBANG]),
-    "jsx": style(BANNER),
-    "tsx": style(BANNER),
+    "jsx": style(BANNER, [SHEBANG]),
+    "tsx": style(BANNER, [SHEBANG]),
     # Stylesheets
     "css": style(BANNER, [CHARSET]),
     "scss": style(BANNER, [CHARSET]),
