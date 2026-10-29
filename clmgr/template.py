@@ -180,6 +180,24 @@ licenses = {"default": "All rights reserved."}
 # Source extensions clmgr can process
 sources = list(comments)
 
+# File types, the extensions that share a comment style. A file that belongs
+# to a type through an include pattern of the configuration gets the comment
+# style of the first extension.
+types = {
+    "java": ["java"],
+    "csharp": ["cs"],
+    "python": ["py"],
+    "sql": ["sql"],
+    "typescript": ["ts", "tsx"],
+    "javascript": ["js", "mjs", "cjs", "jsx"],
+    "stylesheet": ["css", "scss", "less"],
+    "sass": ["sass"],
+    "markup": ["html", "htm", "vue", "svelte"],
+}
+
+# The options of a type entry in the source option
+TYPE_OPTIONS = ["type", "include", "exclude"]
+
 # Placeholders a copyright format may use
 placeholders = ["inception", "year", "name", "locality", "country"]
 

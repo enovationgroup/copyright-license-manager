@@ -196,23 +196,54 @@ cannot be used.
 
 ##### source
 
-A list of file extensions to process. Supported values are 'py', 'java', 'cs',
-'ts', 'sql', 'js', 'mjs', 'cjs', 'jsx', 'tsx', 'css', 'scss', 'sass', 'less',
-'html', 'htm', 'vue' and 'svelte'.
+A list of the files to process. An entry is either a file extension, or a file
+type with all its extensions:
+
+```yaml
+source:
+  - java                 # files with the extension java
+  - type: javascript     # files with the extensions js, mjs, cjs and jsx
+  - type: python         # files with the extension py, plus:
+    include:
+      - "bin/*"          # every file in bin,
+    exclude:
+      - "bin/*.*"        # except files with an extension
+```
+
+The supported types and extensions, and the comment style of their header:
+
+| Type         | Extensions                     | Header                                        |
+| ------------ | ------------------------------ | --------------------------------------------- |
+| `java`       | `java`                         | `/* ... */`                                   |
+| `csharp`     | `cs`                           | `/*** ... */`                                 |
+| `python`     | `py`                           | `#` line comments                             |
+| `sql`        | `sql`                          | `/* ... */`                                   |
+| `typescript` | `ts`, `tsx`                    | `/*! ... */` banner                           |
+| `javascript` | `js`, `mjs`, `cjs`, `jsx`      | `/*! ... */` banner                           |
+| `stylesheet` | `css`, `scss`, `less`          | `/*! ... */` banner                           |
+| `sass`       | `sass`                         | `//` line comments                            |
+| `markup`     | `html`, `htm`, `vue`, `svelte` | `<!-- ... -->`, with `===` around the license |
+
+- Extensions match regardless of case, so `Main.JAVA` is a Java file.
+- `include` adds files to a type, they get the header of the first extension of
+  the type. `exclude` takes files out of that type only. The patterns work like
+  the top-level `include` and `exclude`, which keep applying to every file.
+- An `include` pattern takes precedence over the extension of a file. Qt
+  translation files, for example, are XML files with the extension `ts`:
+  `- type: markup` with `include: ["translations/*.ts"]` gives them a markup
+  header, while the other `ts` files get the banner.
+- `*` also matches a dot, so `bin/*` includes `bin/README.md` and `bin/tool.py`
+  as well. To include only the files without an extension, add `bin/*.*` to the
+  `exclude` of the type.
+- A file that the `include` patterns of two types select is a configuration
+  error: give it an extension, or include it in one type only.
+- Each type is listed at most once. A file given with `-i/--file` is selected
+  by the same rules.
 
 JSON has no comments, so a copyright header cannot be added to it. Minified
 files are usually generated and are best left out with an `exclude` pattern
 such as `**/*.min.*`. A file that is not UTF-8 encoded is skipped with a
 warning.
-
-The comment style of the header depends on the file type:
-
-| Extensions                             | Header                                            |
-| -------------------------------------- | ------------------------------------------------- |
-| `ts`, `js`, `mjs`, `cjs`, `jsx`, `tsx` | `/*! ... */` banner                               |
-| `css`, `scss`, `less`                  | `/*! ... */` banner                               |
-| `sass`                                 | `//` line comments                                |
-| `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
 
 Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
 keep `/*!` comments by default, but a build tool may still move them to a

@@ -1,6 +1,7 @@
+import os
 import sys
 
-from pathlib import Path
+from pathlib import Path, PurePath
 from pprint import pformat
 
 from clmgr.args import (
@@ -15,7 +16,7 @@ from clmgr.args import (
 )
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
-from clmgr.paths import select_files
+from clmgr.paths import SourceError, select_sources, source_extension
 from clmgr.processor import analyze
 
 log = setup_custom_logger("root")
@@ -48,31 +49,57 @@ def main(args=None):
     # however please note that the configuration must always be provided either present from
     # the current working directory or through the flag -c, --config
 
-    for ext in cfg["source"]:
+    try:
         if args.file is not None:
-            file_list = []
-            path = Path(args.file)
-            if path.suffix.lower()[1:] == ext:
-                file_list.append(path)
+            file_list = select_file(input_dir, Path(args.file), cfg["source"])
         else:
-            file_list = select_files(input_dir, ext, cfg["include"], cfg["exclude"])
+            file_list = select_sources(
+                input_dir, cfg["source"], cfg["include"], cfg["exclude"]
+            )
+    except SourceError as error:
+        for message in str(error).splitlines():
+            log.error(message)
+        sys.exit(2)
 
-        for file in file_list:
-            log.debug(f"Processing file: {file}")
+    for file, ext in file_list:
+        log.debug(f"Processing file: {file}")
 
-            # Read source and close it
-            try:
-                with open(file=file.absolute(), encoding="utf-8", mode="r") as src:
-                    lines = src.readlines()
-            except UnicodeDecodeError:
-                log.warning(f"Skipping {file}, it is not UTF-8 encoded")
-                continue
+        # Read source and close it
+        try:
+            with open(file=file.absolute(), encoding="utf-8", mode="r") as src:
+                lines = src.readlines()
+        except UnicodeDecodeError:
+            log.warning(f"Skipping {file}, it is not UTF-8 encoded")
+            continue
 
-            # Determine what would happen to this file and let the
-            # handler either apply or report it
-            action, new_lines = analyze(cfg, ext, lines, file, args)
-            handler.handle(action, file, lines, new_lines)
+        # Determine what would happen to this file and let the
+        # handler either apply or report it
+        action, new_lines = analyze(cfg, ext, lines, file, args)
+        handler.handle(action, file, lines, new_lines)
 
     handler.summarize()
 
     return handler.exit_code()
+
+
+def select_file(input_dir, path, source):
+    """Select a single file given with -i/--file, by the source option
+
+    The include patterns of a type are matched against the path relative to
+    the input directory, as when the directory is walked.
+
+    Returns
+    -------
+        A list with the tuple (path, ext), or an empty list when the file is
+        not a source
+
+    """
+    try:
+        relative_path = PurePath(os.path.relpath(path.absolute(), input_dir))
+    except ValueError:
+        # On Windows a file on another drive has no relative path
+        relative_path = PurePath(path.name)
+
+    ext = source_extension(source, relative_path.as_posix())
+
+    return [] if ext is None else [(path, ext)]

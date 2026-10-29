@@ -179,7 +179,10 @@ def test_config_reports_double_dash_in_license_with_other_problems(tmp_path, cap
 
 def test_config_with_a_list_as_source(tmp_path, caplog):
     assert_rejected(
-        tmp_path, "source:\n  - [html]\n" + VALID_LEGAL, "is not supported", caplog
+        tmp_path,
+        "source:\n  - [html]\n" + VALID_LEGAL,
+        "must be a file extension or a mapping with a type",
+        caplog,
     )
 
 
@@ -227,5 +230,60 @@ def test_config_with_a_format_without_copyright(tmp_path, caplog):
         tmp_path,
         "source:\n  - java\nformat: '(c) {inception} - {year} {name}'\n" + VALID_LEGAL,
         "format must contain the word 'Copyright'",
+        caplog,
+    )
+
+
+def test_source_type_must_be_known(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: cobol\n" + VALID_LEGAL,
+        "source type 'cobol' is not supported, supported are: csharp, java",
+        caplog,
+    )
+
+
+def test_source_type_must_be_listed_once(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: python\n  - type: python\n" + VALID_LEGAL,
+        "source type 'python' is listed more than once",
+        caplog,
+    )
+
+
+def test_source_patterns_need_a_type(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - include:\n      - bin/*\n" + VALID_LEGAL,
+        "source entry [0] must have a type",
+        caplog,
+    )
+
+
+def test_source_type_has_no_unknown_options(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: python\n    includes:\n      - bin/*\n" + VALID_LEGAL,
+        "source entry [0] has unknown option 'includes', "
+        "available are: type, include, exclude",
+        caplog,
+    )
+
+
+def test_source_type_patterns_must_be_a_list(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: python\n    include: bin/*\n" + VALID_LEGAL,
+        "source type 'python': include must be a list of patterns",
+        caplog,
+    )
+
+
+def test_markup_type_checks_for_double_dash(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: markup\nformat: 'Copyright -- {name}'\n" + VALID_LEGAL,
+        "which is not allowed in html, htm, vue, svelte comments",
         caplog,
     )

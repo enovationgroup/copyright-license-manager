@@ -10,6 +10,8 @@ import os
 from pathlib import Path, PurePath
 import re
 
+from clmgr.template import types
+
 # Directories that never hold source files of the project, such as the
 # packages installed by npm. They are skipped at any depth, whatever the
 # include and exclude options are.
@@ -116,6 +118,57 @@ def matches(patterns, path):
     return False
 
 
+class SourceError(Exception):
+    """A file that the source option assigns to more than one file type"""
+
+
+def walk(input_dir, include, exclude):
+    """Walk the files of the input directory that the patterns select
+
+    Parameters
+    ----------
+    input_dir
+        The directory to walk
+    include
+        Glob patterns a file must match, an empty list includes everything
+    exclude
+        Glob patterns a file must not match
+
+    Returns
+    -------
+        Tuples (path, relative) of every selected file, in a stable order,
+        with its path relative to the input directory
+
+    """
+    for root, dirs, files in os.walk(input_dir, topdown=True):
+        relative_root = os.path.relpath(root, input_dir)
+
+        # Do not descend into excluded directories
+        dirs[:] = sorted(
+            d
+            for d in dirs
+            if d not in SKIPPED_DIRECTORIES
+            and not matches(exclude, relative(relative_root, d))
+        )
+
+        for name in sorted(files):
+            path = relative(relative_root, name)
+            if include and not matches(include, path):
+                continue
+            if matches(exclude, path):
+                continue
+
+            yield Path(root, name), path
+
+
+def extension(path):
+    """The extension of a file, lowercase and without the leading dot
+
+    Extensions match regardless of case, so Main.JAVA is a Java file.
+    """
+    return PurePath(path).suffix.lower()[1:]
+
+
 def select_files(input_dir, ext, include, exclude):
     """Collect the source files of one extension to process
 
@@ -135,31 +188,104 @@ def select_files(input_dir, ext, include, exclude):
         The selected paths, in a stable order
 
     """
-    selected = []
+    return [
+        path
+        for path, relative_path in walk(input_dir, include, exclude)
+        if extension(relative_path) == ext
+    ]
 
-    for root, dirs, files in os.walk(input_dir, topdown=True):
-        relative_root = os.path.relpath(root, input_dir)
 
-        # Do not descend into excluded directories
-        dirs[:] = sorted(
-            d
-            for d in dirs
-            if d not in SKIPPED_DIRECTORIES
-            and not matches(exclude, relative(relative_root, d))
+def source_extension(source, path):
+    """The extension whose comment style a file gets, by the source option
+
+    An include pattern of a type entry takes precedence over the extension of
+    the file. Otherwise the file is a source when its extension is listed, or
+    belongs to a listed type and is not excluded from it.
+
+    Parameters
+    ----------
+    source
+        The validated source option
+    path
+        Path of the file, relative to the input directory
+
+    Returns
+    -------
+        The extension, or None when the file is not a source
+
+    Raises
+    ------
+    SourceError
+        When include patterns of more than one type match the file
+
+    """
+    entries = [entry for entry in source if isinstance(entry, dict)]
+
+    included = [
+        entry["type"]
+        for entry in entries
+        if matches(entry.get("include") or [], path)
+        and not matches(entry.get("exclude") or [], path)
+    ]
+    if len(included) > 1:
+        raise SourceError(
+            f"{path} is included by the types {' and '.join(included)}, "
+            "give it an extension or include it in one type only"
         )
+    if included:
+        return types[included[0]][0]
 
-        for name in sorted(files):
-            # Extensions match regardless of case, as with -i/--file
-            if PurePath(name).suffix.lower() != "." + ext:
-                continue
+    ext = extension(path)
+    if ext in source:
+        return ext
+    for entry in entries:
+        if ext in types[entry["type"]] and not matches(
+            entry.get("exclude") or [], path
+        ):
+            return ext
 
-            path = relative(relative_root, name)
-            if include and not matches(include, path):
-                continue
-            if matches(exclude, path):
-                continue
+    return None
 
-            selected.append(Path(root, name))
+
+def select_sources(input_dir, source, include, exclude):
+    """Collect the source files to process, by the source option
+
+    Parameters
+    ----------
+    input_dir
+        The directory to walk
+    source
+        The validated source option
+    include
+        Glob patterns a file must match, an empty list includes everything
+    exclude
+        Glob patterns a file must not match
+
+    Returns
+    -------
+        Tuples (path, ext) of every source file, in a stable order, with the
+        extension whose comment style the file gets
+
+    Raises
+    ------
+    SourceError
+        When the source option assigns files to more than one type, after
+        reporting every such file
+
+    """
+    selected = []
+    errors = []
+    for path, relative_path in walk(input_dir, include, exclude):
+        try:
+            ext = source_extension(source, relative_path)
+        except SourceError as error:
+            errors.append(str(error))
+            continue
+        if ext is not None:
+            selected.append((path, ext))
+
+    if errors:
+        raise SourceError("\n".join(errors))
 
     return selected
 
