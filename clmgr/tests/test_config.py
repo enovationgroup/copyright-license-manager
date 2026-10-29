@@ -99,7 +99,9 @@ def test_config_without_license_disables_the_license(tmp_path):
     """A license notice is optional, leaving it out must not fail the run"""
     run_config(tmp_path, "source:\n  - py\n" + VALID_LEGAL)
 
-    assert "All rights reserved" not in (tmp_path / "single.py").read_text()
+    assert "All rights reserved" not in (tmp_path / "single.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_license_without_content_uses_the_default(tmp_path):
@@ -108,7 +110,7 @@ def test_license_without_content_uses_the_default(tmp_path):
         "source:\n  - py\nlicense:\n  enabled: true\n" + VALID_LEGAL,
     )
 
-    assert "All rights reserved" in (tmp_path / "single.py").read_text()
+    assert "All rights reserved" in (tmp_path / "single.py").read_text(encoding="utf-8")
 
 
 def test_defaults_are_applied():
