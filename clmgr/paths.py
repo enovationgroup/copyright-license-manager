@@ -172,32 +172,6 @@ def extension(path):
     return PurePath(path).suffix.lower()[1:]
 
 
-def select_files(input_dir, ext, include, exclude):
-    """Collect the source files of one extension to process
-
-    Parameters
-    ----------
-    input_dir
-        The directory to walk
-    ext
-        Source file extension, without the leading dot
-    include
-        Glob patterns a file must match, an empty list includes everything
-    exclude
-        Glob patterns a file must not match
-
-    Returns
-    -------
-        The selected paths, in a stable order
-
-    """
-    return [
-        path
-        for path, relative_path in walk(input_dir, include, exclude)
-        if extension(relative_path) == ext
-    ]
-
-
 def interpreter(file):
     """The interpreter the shebang of a file names, without a version number
 
