@@ -13,6 +13,7 @@ import re
 import pytest
 
 from clmgr.main import main
+from clmgr.tests.test_idempotent import CONFIGS, OUTPUTS, scenario
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -42,9 +43,9 @@ def write_source(path, ext, newline, bom):
     return path
 
 
-def line_endings(path):
-    """The distinct line endings used in a file"""
-    return set(re.findall(rb"\r\n|\r|\n", path.read_bytes()))
+def line_endings(data):
+    """The distinct line endings used in the contents of a file"""
+    return set(re.findall(rb"\r\n|\r|\n", data))
 
 
 def run(path, *extra_args):
@@ -58,7 +59,7 @@ def assert_encoding_preserved(path, newline, bom):
 
     assert data.startswith(codecs.BOM_UTF8) is bom
     assert data.count(codecs.BOM_UTF8) == (1 if bom else 0)
-    assert line_endings(path) == {newline.encode("utf-8")}
+    assert line_endings(data) == {newline.encode("utf-8")}
 
 
 parameters = pytest.mark.parametrize(
@@ -133,15 +134,16 @@ def test_check_reports_green_only_when_apply_is_a_noop(tmp_path, ext, newline, b
     assert source.read_bytes() == processed
 
 
+@pytest.mark.parametrize("newline", ["\r\n", "\n"])
 @pytest.mark.parametrize("ext", list(sources))
-def test_existing_header_is_detected_behind_a_bom(tmp_path, ext):
+def test_existing_header_is_detected_behind_a_bom(tmp_path, ext, newline):
     """A BOM must not hide an existing header from detection
 
     Decoding the mark as a character left it in front of the comment marker, so
     the header was not recognised and a second one was rendered above it.
     """
     # A file that already carries a correct header
-    reference = write_source(tmp_path / f"reference.{ext}", ext, "\n", False)
+    reference = write_source(tmp_path / f"reference.{ext}", ext, newline, False)
     run(reference)
 
     # The same content, written with a BOM as Visual Studio would
@@ -166,13 +168,9 @@ def test_mixed_line_endings_are_left_as_they_are(tmp_path):
     header, body = data.split(b"using System;", 1)
 
     # The header follows the first line ending in the file
-    assert line_endings_of(header) == {b"\r\n"}
+    assert line_endings(header) == {b"\r\n"}
     # The body keeps the endings it already had
     assert body == b"\r\n\r\nnamespace Demo\n{\n}\n"
-
-
-def line_endings_of(data):
-    return set(re.findall(rb"\r\n|\r|\n", data))
 
 
 def test_header_follows_the_line_ending_below_the_prologue(tmp_path):
@@ -185,7 +183,7 @@ def test_header_follows_the_line_ending_below_the_prologue(tmp_path):
     data = source.read_bytes()
     assert data.startswith(b"#!/usr/bin/env node\n/*!")
     header = data[len(b"#!/usr/bin/env node\n") : data.index(b"foo();")]
-    assert line_endings_of(header) == {b"\r\n"}
+    assert line_endings(header) == {b"\r\n"}
 
 
 def test_up_to_date_header_below_a_prologue_is_left_alone(tmp_path):
@@ -207,3 +205,26 @@ def test_byte_order_mark_stays_in_front_of_a_doctype(tmp_path):
     assert run(source) == 0
 
     assert source.read_bytes().startswith(codecs.BOM_UTF8 + b"<!DOCTYPE html>\n<!--\n")
+
+
+@pytest.mark.parametrize("newline", ["\r\n", "\r"])
+@pytest.mark.parametrize(
+    "path", OUTPUTS, ids=[os.path.relpath(p, test_dir) for p in OUTPUTS]
+)
+def test_scenario_with_other_line_endings(tmp_path, path, newline):
+    """Every scenario gives the same result with other line endings"""
+    relative = os.path.relpath(path, test_dir + "/output")
+    directory = relative.split(os.sep)[0]
+    name = scenario(path)
+    config = f"{test_dir}/config/{directory}/{CONFIGS.get(name, name)}.yml"
+
+    def convert(file):
+        with open(file, "rb") as src:
+            return src.read().replace(b"\n", newline.encode("utf-8"))
+
+    source = tmp_path / os.path.basename(path)
+    source.write_bytes(convert(test_dir + "/input/" + relative))
+
+    main(["-c", config, "--file", str(source)])
+
+    assert source.read_bytes() == convert(path)
