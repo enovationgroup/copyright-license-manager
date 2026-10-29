@@ -202,7 +202,8 @@ A list of file extensions to process. Supported values are 'py', 'java', 'cs',
 
 JSON has no comments, so a copyright header cannot be added to it. Minified
 files are usually generated and are best left out with an `exclude` pattern
-such as `**/*.min.*`.
+such as `**/*.min.*`. A file that is not UTF-8 encoded is skipped with a
+warning.
 
 The comment style of the header depends on the file type:
 

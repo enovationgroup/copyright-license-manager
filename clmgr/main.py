@@ -61,9 +61,12 @@ def main(args=None):
             log.debug(f"Processing file: {file}")
 
             # Read source and close it
-            src = open(file=file.absolute(), encoding="utf-8", mode="r")
-            lines = src.readlines()
-            src.close()
+            try:
+                with open(file=file.absolute(), encoding="utf-8", mode="r") as src:
+                    lines = src.readlines()
+            except UnicodeDecodeError:
+                log.warning(f"Skipping {file}, it is not UTF-8 encoded")
+                continue
 
             # Determine what would happen to this file and let the
             # handler either apply or report it
