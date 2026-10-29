@@ -16,8 +16,10 @@ log = logging.getLogger("root")
 def _detect_newline(lines, default="\n"):
     r"""Determine the line ending used by a source file.
 
-    The first line ending in the file decides, because the header we render is
-    placed at the top. Files without any line ending fall back to `default`
+    The first line ending in the lines decides. `analyze` passes the lines
+    from where the header is or goes, so a prologue with a different line
+    ending, such as a shebang, does not decide for the header. Files without
+    any line ending fall back to `default`
     rather than to the platform separator: the tool commonly runs on Linux CI
     over repositories written on Windows, so `os.linesep` would be the wrong
     guess there.
@@ -540,7 +542,7 @@ def _is_marker(line, marker, char):
     return text == marker
 
 
-def render_insert(cfg, ext, offset, lines, max_region=None):
+def render_insert(cfg, ext, offset, lines, nl, max_region=None):
     """Render the file contents with a new copyright header inserted.
 
     Parameters
@@ -553,6 +555,8 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
+    nl
+        Line ending of the lines that are written
     max_region
         Number of lines an existing header must start in, as in `analyze`
 
@@ -561,7 +565,6 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
         The new file contents as a list of lines. The input is left untouched.
 
     """
-    nl = _detect_newline(lines)
     out = lines[:offset]
     lines = lines[offset:]
 
@@ -653,7 +656,7 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     return out
 
 
-def render_update(cfg, ext, offset, lines, max_region=None):
+def render_update(cfg, ext, offset, lines, nl, max_region=None):
     """Render the file contents with the existing copyright header updated.
 
     Parameters
@@ -666,6 +669,8 @@ def render_update(cfg, ext, offset, lines, max_region=None):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
+    nl
+        Line ending of the lines that are written
     max_region
         Number of lines the header must start in, as in `analyze`
 
@@ -674,7 +679,6 @@ def render_update(cfg, ext, offset, lines, max_region=None):
         The new file contents as a list of lines. The input is left untouched.
 
     """
-    nl = _detect_newline(lines)
     out = lines[:offset]
     lines = lines[offset:]
 
@@ -789,7 +793,10 @@ def analyze(cfg, ext, lines, path, args):
     try:
         # Lines such as a shebang or doctype must stay at the top of the file
         offset = count_prologue_lines(lines, comments.get(ext)["prologue"])
-        nl = _detect_newline(lines)
+
+        # Header lines take the line ending of the lines the header is or goes
+        # in, below the prologue
+        nl = _detect_newline(lines[offset:], default=_detect_newline(lines))
 
         # Determine insert vs update by scanning the header block rather than
         # relying on a fixed line index (SQL and indented headers break that).
@@ -831,11 +838,11 @@ def analyze(cfg, ext, lines, path, args):
 
         if header is None or not _has_copyright(header[2]):
             action = "add"
-            new_lines = render_insert(cfg, ext, offset, lines, args.region)
+            new_lines = render_insert(cfg, ext, offset, lines, nl, args.region)
 
         else:
             action = "update"
-            new_lines = render_update(cfg, ext, offset, lines, args.region)
+            new_lines = render_update(cfg, ext, offset, lines, nl, args.region)
 
         for statement in outside:
             log.warning(

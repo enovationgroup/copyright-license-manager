@@ -175,6 +175,32 @@ def line_endings_of(data):
     return set(re.findall(rb"\r\n|\r|\n", data))
 
 
+def test_header_follows_the_line_ending_below_the_prologue(tmp_path):
+    """A shebang with another line ending does not decide for the header"""
+    source = tmp_path / "sample.ts"
+    source.write_bytes(b"#!/usr/bin/env node\nfoo();\r\n")
+
+    assert run(source) == 0
+
+    data = source.read_bytes()
+    assert data.startswith(b"#!/usr/bin/env node\n/*!")
+    header = data[len(b"#!/usr/bin/env node\n") : data.index(b"foo();")]
+    assert line_endings_of(header) == {b"\r\n"}
+
+
+def test_up_to_date_header_below_a_prologue_is_left_alone(tmp_path):
+    source = tmp_path / "sample.ts"
+    source.write_bytes(b"#!/usr/bin/env node\nfoo();\n")
+    run(source)
+    # The shebang line of the processed file now ends with CRLF
+    processed = source.read_bytes().replace(b"node\n", b"node\r\n", 1)
+    source.write_bytes(processed)
+
+    assert run(source, "--check") == 0
+    assert run(source) == 0
+    assert source.read_bytes() == processed
+
+
 def test_byte_order_mark_stays_in_front_of_a_doctype(tmp_path):
     source = write_source(tmp_path / "sample.html", "html", "\n", True)
 
