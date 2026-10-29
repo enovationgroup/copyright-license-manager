@@ -2,7 +2,7 @@ import shutil
 
 import pytest
 
-from clmgr.args import apply_config_defaults, read_config, validate_config
+from clmgr.args import apply_config_defaults, parse_args, read_config, validate_config
 from clmgr.main import main
 from clmgr.tests.test_base import test_dir
 
@@ -71,7 +71,7 @@ def test_config_with_empty_source(tmp_path, caplog):
 
 def test_config_with_unsupported_source(tmp_path, caplog):
     assert_rejected(
-        tmp_path, "source:\n  - js\n" + VALID_LEGAL, "is not supported", caplog
+        tmp_path, "source:\n  - json\n" + VALID_LEGAL, "is not supported", caplog
     )
 
 
@@ -87,7 +87,7 @@ def test_config_with_incomplete_legal_entity(tmp_path, caplog):
 def test_config_reports_every_problem(tmp_path, caplog):
     assert_rejected(
         tmp_path,
-        "source:\n  - js\nlegal:\n  - name: Enovation Group B.V.\n",
+        "source:\n  - json\nlegal:\n  - name: Enovation Group B.V.\n",
         "is not supported",
         caplog,
     )
@@ -135,3 +135,97 @@ def test_defaults_do_not_overwrite_configured_options():
     assert cfg["format"] == "Copyright {year}"
     assert cfg["license"]["content"] == "Custom"
     assert cfg["license"]["external"] is False
+
+
+def test_config_with_double_dash_in_markup_copyright(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\nformat: 'Copyright -- {name}'\n" + VALID_LEGAL,
+        "copyright of legal entity [0] contains '--'",
+        caplog,
+    )
+
+
+def test_config_with_double_dash_in_markup_license(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - vue\nlicense:\n  enabled: true\n  content: A -- B\n"
+        + VALID_LEGAL,
+        "license content contains '--'",
+        caplog,
+    )
+
+
+def test_config_with_double_dash_without_markup(tmp_path):
+    config_file = write_config(
+        tmp_path, "source:\n  - py\nformat: 'Copyright -- {name}'\n" + VALID_LEGAL
+    )
+
+    validate_config(read_config(config_file), config_file)
+
+
+def test_config_reports_double_dash_in_license_with_other_problems(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\n  - json\nlicense:\n  enabled: true\n  content: A -- B\n"
+        "legal:\n  - name: Enovation Group B.V.\n",
+        "license content contains '--'",
+        caplog,
+    )
+
+    assert "is not supported" in caplog.text
+    assert "legal entity [0] is missing" in caplog.text
+
+
+def test_config_with_a_list_as_source(tmp_path, caplog):
+    assert_rejected(
+        tmp_path, "source:\n  - [html]\n" + VALID_LEGAL, "is not supported", caplog
+    )
+
+
+def test_config_with_double_dash_in_a_license_that_is_not_written(tmp_path):
+    for license_cfg in [
+        "license:\n  enabled: false\n  content: A -- B\n",
+        "license:\n  enabled: true\n  external: true\n  content: A -- B\n",
+    ]:
+        config_file = write_config(
+            tmp_path, "source:\n  - html\n" + license_cfg + VALID_LEGAL
+        )
+
+        validate_config(read_config(config_file), config_file)
+
+
+def test_search_region_must_be_at_least_one(capsys):
+    for region in ["0", "-1", "ten"]:
+        with pytest.raises(SystemExit) as excinfo:
+            parse_args(["--region", region])
+
+        assert excinfo.value.code == 2
+    assert "--region" in capsys.readouterr().err
+
+
+def test_config_with_a_placeholder_without_a_name(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\nformat: 'Copyright {} {name}'\n" + VALID_LEGAL,
+        "format uses a placeholder without a name '{}'",
+        caplog,
+    )
+
+
+def test_config_with_a_numbered_placeholder(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - py\nformat: 'Copyright {0} {name}'\n" + VALID_LEGAL,
+        "format uses unknown placeholder '0'",
+        caplog,
+    )
+
+
+def test_config_with_a_format_without_copyright(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - java\nformat: '(c) {inception} - {year} {name}'\n" + VALID_LEGAL,
+        "format must contain the word 'Copyright'",
+        caplog,
+    )

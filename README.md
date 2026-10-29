@@ -24,7 +24,11 @@ Current supported languages
 - C#
 - Java
 - Python
-- TypeScript
+- SQL
+- TypeScript (`ts`, `tsx`)
+- JavaScript (`js`, `mjs`, `cjs`, `jsx`)
+- Stylesheets (`css`, `scss`, `sass`, `less`)
+- Markup (`html`, `htm`, `vue`, `svelte`)
 
 ## Usage
 
@@ -38,7 +42,7 @@ Options:
 -c, --config FILE     Path to the configuration file (default: copyright.yml)
 -d, --dir DIR         Input directory to process (default: current working directory)
 -i, --file FILE       Process a single input file
---region REGION       Copyright search region (default: 10)
+--region REGION       Number of lines the header must start in (default: 10)
 -n, --dry-run         Report which files would change without writing them
 --check               Implies --dry-run; exit with 1 when a file would change
 --diff                Print a unified diff for every file that is changed
@@ -53,12 +57,15 @@ Options:
 | `-c, --config FILE` | `copyright.yml`           | Path to the configuration file                                   |
 | `-i, --file FILE`   | None                      | Path to a single input file to process                           |
 | `-d, --dir DIR`     | Current working directory | Input directory to process                                       |
-| `--region REGION`   | `10`                      | Copyright search region                                          |
+| `--region REGION`   | `10`                      | Number of lines the header must start in, at least `1`           |
 | `-n, --dry-run`     | false                     | Report which files would change without writing them             |
 | `--check`           | false                     | Implies `--dry-run`; exit with `1` when a file would change      |
 | `--diff`            | false                     | Print a unified diff for every file that is changed              |
 | `--debug`           | false                     | Enable verbose logging                                           |
 | `--version`         | N/A                       | Show version information and exit                                |
+
+The search region is counted from the first line below the lines that must stay
+at the top of a file, such as a shebang or a doctype.
 
 ### Dry run
 
@@ -123,6 +130,32 @@ It never writes to the working tree, so it is safe to run on any checkout.
   run: clmgr --check --diff
 ```
 
+### Build output
+
+clmgr manages the headers of source files. Do not run it on build output, such
+as the bundles of an Angular, React or Vue application: those files are
+generated again on every build. Leave the build directory out with an
+`exclude` pattern such as `/dist`.
+
+The headers of the source files do not reliably end up in the bundles:
+
+- Angular handles license comments differently when `extractLicenses` is
+  enabled, which is the default for production builds: check whether your
+  headers are still in the bundles of your build
+- The terser plugin of webpack moves them to a separate `*.LICENSE.txt` file
+  by default
+- Where they are kept, a bundle contains the same header once for every source
+  file it is built from
+
+To show a copyright notice in the files that are deployed, let the build tool
+add a single banner to every bundle, for example with the `BannerPlugin` of
+webpack, the `output.banner` option of Rollup and Vite, or the `banner` option
+of esbuild. Angular CLI has no banner option, so it needs a post-build step or
+a custom builder.
+
+Keep the extraction of third party licenses enabled as well: most open source
+licenses require their notices to be distributed with the application.
+
 ## Configuration
 
 ### Configuration File
@@ -164,7 +197,81 @@ cannot be used.
 ##### source
 
 A list of file extensions to process. Supported values are 'py', 'java', 'cs',
-'ts' and 'sql'.
+'ts', 'sql', 'js', 'mjs', 'cjs', 'jsx', 'tsx', 'css', 'scss', 'sass', 'less',
+'html', 'htm', 'vue' and 'svelte'.
+
+JSON has no comments, so a copyright header cannot be added to it. Minified
+files are usually generated and are best left out with an `exclude` pattern
+such as `**/*.min.*`.
+
+The comment style of the header depends on the file type:
+
+| Extensions                             | Header                                            |
+| -------------------------------------- | ------------------------------------------------- |
+| `ts`, `js`, `mjs`, `cjs`, `jsx`, `tsx` | `/*! ... */` banner                               |
+| `css`, `scss`, `less`                  | `/*! ... */` banner                               |
+| `sass`                                 | `//` line comments                                |
+| `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
+
+Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
+keep `/*!` comments by default, but a build tool may still move them to a
+separate file or leave them out. See [Build output](#build-output). The
+indented Sass syntax ends a `/*` comment at the first line that is not
+indented, so new headers in `.sass` files use `//` line comments instead of the
+banner. Line comments are not written to the compiled CSS.
+
+```scss
+/*! *****************************************************************************
+SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+---
+All rights reserved.
+---
+****************************************************************************** */
+```
+
+Markup comments use `===` around the license, because XML based markup does
+not allow `--` inside a comment. For the same reason clmgr reports a
+configuration error when the copyright statements, or the license content
+when it is written into the header, contain `--` while a markup source is
+configured:
+
+```html
+<!--
+  SPDX-FileCopyrightText: Copyright (c) 2014 - 2026 [Enovation Group B.V. - Capelle aan den IJssel - NL]
+  ===
+  All rights reserved.
+  ===
+-->
+```
+
+Lines that must stay at the top of a file are left in place and the header is
+placed below them: a shebang (`#!`) in JavaScript, TypeScript and Python, an
+encoding declaration (`# -*- coding: utf-8 -*-`) in Python, a `@charset` rule
+in stylesheets, and an XML declaration or doctype in HTML. A byte order
+mark always stays in front of the file.
+
+An existing `/* */` header that holds a copyright statement is updated in
+place, even when new headers of that file type use a different comment style.
+What happens to a leading comment without a copyright statement depends on the
+file type:
+
+- JavaScript, TypeScript, CSS, SCSS, LESS and C#: a comment that is not
+  written in the style of new headers, such as an `eslint-disable` pragma, is
+  left alone and the header is added above it
+- Markup and Sass: every comment without a copyright statement is left alone,
+  so directives such as `<!-- eslint-disable -->`, `<!-- prettier-ignore -->`,
+  conditional comments or `// stylelint-disable-next-line` keep working
+- Java, SQL and Python: the first comment is the header, the copyright
+  statements are added to it
+
+Only the first comment of a file can be the header. When a copyright statement
+is found in any other comment that starts within the search region, at the
+start of a line or directly after another comment, including `//` comments in
+Java, C#, JavaScript, TypeScript, SCSS and LESS, `--` comments in SQL and the
+`/* */` and `//` comments of a `<script>` or `<style>` element in markup, clmgr
+leaves it unchanged and logs a warning, so the old statement can be removed by
+hand. A comment that follows code or a tag on the same line, as in
+`var a; // Copyright`, is not checked.
 
 ##### include
 
@@ -175,18 +282,27 @@ every file of a configured source extension is processed.
 
 A list of glob patterns to exclude files from processing.
 
+A `node_modules` directory is always skipped, at any depth and whatever the
+`include` and `exclude` options are: it holds the packages installed by npm,
+which carry the copyright of their authors.
+
 Patterns are matched against the path of a file relative to the input
 directory. A `*` matches within one directory, `**` matches across
 directories, and a pattern without a separator also matches a file name, a
-file name without its extension, or a directory anywhere in the tree:
+file name without its extension, or a directory anywhere in the tree. A
+pattern starting with a `/` is anchored to the input directory, as in a
+`.gitignore` file. It matches a file or a directory with everything in it,
+counted from the input directory:
 
 ```yaml
 include:
   - "src/**/*"      # every file under src, at any depth
+  - /web            # every file in the web directory at the top, not in lib/web
 exclude:
   - "**/*.min.js"   # minified files anywhere
   - build           # any directory named build
   - Generated       # any file named Generated.java, Generated.py, ...
+  - /dist           # only the dist directory at the top of the input directory
 ```
 
 ##### legal
@@ -202,6 +318,8 @@ A list of legal entities associated with the copyright. Each entity must have th
 
 The format string for each row in the copyright notice. This property is optional and by default,
 it is set to `SPDX-FileCopyrightText: Copyright (c) {inception} - {year} [{name} - {locality} - {country}]`.
+The format must contain the word `Copyright`, because clmgr recognises existing
+copyright statements by it.
 Only the following placeholders can be used, any other placeholder is reported
 as a configuration error:
 

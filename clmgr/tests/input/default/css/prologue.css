@@ -1,0 +1,4 @@
+@charset "UTF-8";
+.prologue {
+    content: 'Copyright test prologue';
+}

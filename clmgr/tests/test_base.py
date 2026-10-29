@@ -5,12 +5,27 @@ import shutil
 
 from pathlib import Path
 
+from clmgr.args import read_config
 from clmgr.main import main
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 
+# The current year in every test, the year the expected output is written in
+YEAR = 2026
+
+
+def assert_source_configured(config_file, filename):
+    """A file whose extension is not a configured source is skipped by clmgr,
+    which would let a test pass without processing anything"""
+    ext = filename.rsplit(".", 1)[1]
+    configured = read_config(config_file)["source"]
+
+    assert ext in configured, f"add '{ext}' to the source option of {config_file}"
+
 
 def run_test_config(directory, filename, config):
+    assert_source_configured(test_dir + "/config/" + config, filename)
+
     test_args = [
         "-c",
         test_dir + "/config/" + config,

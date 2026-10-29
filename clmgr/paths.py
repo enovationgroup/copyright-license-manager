@@ -10,6 +10,11 @@ import os
 from pathlib import Path, PurePath
 import re
 
+# Directories that never hold source files of the project, such as the
+# packages installed by npm. They are skipped at any depth, whatever the
+# include and exclude options are.
+SKIPPED_DIRECTORIES = ["node_modules"]
+
 
 @lru_cache(maxsize=None)
 def compile_glob(pattern):
@@ -71,6 +76,11 @@ def matches(patterns, path):
     a short pattern such as `build` or `Generated` working the way it reads,
     without it having to spell out the full path.
 
+    A pattern starting with a `/` is anchored to the input directory, as in a
+    `.gitignore` file: it matches the whole relative path or one of the
+    directories leading to it, counted from the input directory. So `/src`
+    matches every file in the top level src directory, but not in `lib/src`.
+
     Parameters
     ----------
     patterns
@@ -88,8 +98,17 @@ def matches(patterns, path):
 
     pure = PurePath(path)
     candidates = [pure.as_posix(), pure.name, pure.stem] + list(pure.parts)
+    anchored = [pure.as_posix()] + [
+        PurePath(*pure.parts[:depth]).as_posix() for depth in range(1, len(pure.parts))
+    ]
 
     for pattern in patterns:
+        if pattern.startswith("/"):
+            regex = compile_glob(pattern.lstrip("/"))
+            if any(regex.match(candidate) for candidate in anchored):
+                return True
+            continue
+
         regex = compile_glob(pattern)
         if any(regex.match(candidate) for candidate in candidates):
             return True
@@ -123,7 +142,10 @@ def select_files(input_dir, ext, include, exclude):
 
         # Do not descend into excluded directories
         dirs[:] = sorted(
-            d for d in dirs if not matches(exclude, relative(relative_root, d))
+            d
+            for d in dirs
+            if d not in SKIPPED_DIRECTORIES
+            and not matches(exclude, relative(relative_root, d))
         )
 
         for name in sorted(files):

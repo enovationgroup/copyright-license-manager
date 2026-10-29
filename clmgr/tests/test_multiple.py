@@ -39,3 +39,43 @@ def test_format_multiple_dotnet():
 
 def test_format_multiple_sql():
     run_test_config("format/sql/", "multiple.sql", "format/multiple.yml")
+
+
+def test_multiple_javascript():
+    run_test_config("default/js/", "multiple.js", "default/multiple.yml")
+
+
+def test_multiple_css():
+    run_test_config("default/css/", "multiple.css", "default/multiple.yml")
+
+
+def test_multiple_scss():
+    run_test_config("default/scss/", "multiple.scss", "default/multiple.yml")
+
+
+def test_multiple_sass():
+    run_test_config("default/sass/", "multiple.sass", "default/multiple.yml")
+
+
+def test_multiple_html():
+    run_test_config("default/html/", "multiple.html", "default/multiple.yml")
+
+
+def test_format_multiple_javascript():
+    run_test_config("format/js/", "multiple.js", "format/multiple.yml")
+
+
+def test_format_multiple_css():
+    run_test_config("format/css/", "multiple.css", "format/multiple.yml")
+
+
+def test_format_multiple_scss():
+    run_test_config("format/scss/", "multiple.scss", "format/multiple.yml")
+
+
+def test_format_multiple_sass():
+    run_test_config("format/sass/", "multiple.sass", "format/multiple.yml")
+
+
+def test_format_multiple_html():
+    run_test_config("format/html/", "multiple.html", "format/multiple.yml")
