@@ -30,7 +30,11 @@ TRANSFERS = [
 
 
 def run(ext, text, legal=None, license=None):
-    """Analyze a file twice, the second run must not change anything"""
+    """Analyze a file twice, the second run must not change anything.
+
+    The file is analyzed with CRLF and with CR line endings as well, which
+    must give the same result with those line endings.
+    """
     cfg = apply_config_defaults(
         {
             "source": [ext],
@@ -40,11 +44,20 @@ def run(ext, text, legal=None, license=None):
     )
     args = parse_args([])
 
-    action, new_lines = analyze(cfg, ext, text.splitlines(True), "file", args)
-    again, _ = analyze(cfg, ext, new_lines, "file", args)
-    assert again == "none"
+    def analyze_twice(text):
+        action, new_lines = analyze(cfg, ext, text.splitlines(True), "file", args)
+        again, _ = analyze(cfg, ext, new_lines, "file", args)
+        assert again == "none"
+        return action, "".join(new_lines)
 
-    return action, "".join(new_lines)
+    action, new_text = analyze_twice(text)
+    for nl in ["\r\n", "\r"]:
+        assert analyze_twice(text.replace("\n", nl)) == (
+            action,
+            new_text.replace("\n", nl),
+        ), repr(nl)
+
+    return action, new_text
 
 
 def test_plain_block_header_is_updated_in_place():
@@ -159,21 +172,6 @@ def test_separator_is_not_a_license_marker():
 
     assert action == "update"
     assert "  ===\n  All rights reserved.\n  ===\n" in text
-
-
-def test_byte_order_mark_stays_in_front():
-    action, text = run("html", "﻿<!DOCTYPE html>\n<html>\n")
-
-    assert action == "add"
-    assert text.startswith("﻿<!DOCTYPE html>\n<!--\n")
-
-
-def test_byte_order_mark_stays_in_front_dotnet():
-    action, text = run("cs", "﻿using System;\n")
-
-    assert action == "add"
-    assert text.startswith("﻿/****")
-    assert text.count("﻿") == 1
 
 
 def test_start_line_without_text_is_left_alone():
@@ -706,3 +704,43 @@ def test_copyright_on_the_line_of_the_header_is_reported(caplog):
     analyze(cfg, "html", [source], "file", parse_args([]))
 
     assert f'{WARNING}: "<!-- Copyright (c) 2010 X -->"' in caplog.text
+
+
+def test_text_and_code_on_the_closing_line_are_moved():
+    action, text = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n * note */ class A {}\n",
+        license={"enabled": False},
+    )
+
+    assert action == "update"
+    assert text == f"/*\n * {SPDX}\n * note\n */\nclass A {{}}\n"
+
+
+def test_code_after_the_closing_marker_is_moved():
+    action, text = run(
+        "java",
+        "/*\n * Copyright (c) 2015 Enovation\n*/ class A {}\n",
+        license={"enabled": False},
+    )
+
+    assert action == "update"
+    assert text == f"/*\n * {SPDX}\n */\nclass A {{}}\n"
+
+
+def test_prologue_on_the_last_line_without_line_ending():
+    action, text = run(
+        "py",
+        "#!/usr/bin/env python\n# -*- coding: utf-8 -*-",
+        license={"enabled": False},
+    )
+
+    assert action == "add"
+    assert text == f"#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n#\n# {SPDX}\n#\n"
+
+
+def test_comment_on_the_last_line_without_line_ending():
+    action, text = run("java", "/*\n * note\n */", license={"enabled": False})
+
+    assert action == "add"
+    assert text == f"/*\n * {SPDX}\n *\n * note\n */\n"

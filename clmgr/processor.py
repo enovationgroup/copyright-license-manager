@@ -1,5 +1,6 @@
 """Processor functions"""
 
+import codecs
 import datetime
 import logging
 import os
@@ -11,7 +12,70 @@ from clmgr.template import comments, statements
 
 log = logging.getLogger("root")
 
-BOM = "\ufeff"
+
+def _detect_newline(lines, default="\n"):
+    r"""Determine the line ending of the lines clmgr writes.
+
+    The first line ending in the lines decides. `analyze` passes the lines
+    from where the header is or goes, so a prologue with a different line
+    ending, such as a shebang, does not decide for the header. Lines without
+    any line ending fall back to `default` rather than to `os.linesep`, so
+    the result does not depend on the platform: on Windows `os.linesep` is
+    "\r\n".
+
+    Parameters
+    ----------
+    lines
+        Lines of a file, as read by `read_file`
+    default
+        Line ending to assume for lines that contain none
+
+    Returns
+    -------
+        One of "\r\n", "\n" or "\r"
+
+    """
+    for line in lines:
+        if line.endswith("\r\n"):
+            return "\r\n"
+        if line.endswith("\n"):
+            return "\n"
+        if line.endswith("\r"):
+            return "\r"
+
+    return default
+
+
+def _has_bom(path):
+    """Report whether a file starts with a UTF-8 byte order mark"""
+    with open(file=path, mode="rb") as src:
+        return src.read(len(codecs.BOM_UTF8)) == codecs.BOM_UTF8
+
+
+def read_file(path):
+    r"""Read a source file without altering how it is encoded.
+
+    A byte order mark is consumed rather than decoded, so it cannot end up in
+    the middle of the file once a header is rendered above the first line, and
+    so header detection is not thrown off by a `\ufeff` in front of the comment
+    marker. Line endings are read verbatim instead of being normalised to "\n",
+    which keeps every line the tool does not touch byte for byte identical.
+
+    `write_file` writes the byte order mark back, the line endings stay in the
+    lines.
+
+    Parameters
+    ----------
+    path
+        Path of the source file
+
+    Returns
+    -------
+        The file contents as a list of lines
+
+    """
+    with open(file=path, encoding="utf-8-sig", mode="r", newline="") as src:
+        return src.readlines()
 
 
 def _find_first_non_empty_line_index(lines):
@@ -52,8 +116,8 @@ def count_prologue_lines(lines, prologue):
             pos = match.end()
 
     consumed = text[:pos]
-    count = consumed.count("\n")
-    if consumed and not consumed.endswith("\n"):
+    count = len(re.findall(r"\r\n|\r|\n", consumed))
+    if consumed and not consumed.endswith(("\n", "\r")):
         count += 1
 
     return count
@@ -285,7 +349,7 @@ def _is_decoration(text):
     return re.search(r"[^\W_]", text) is None
 
 
-def _split_header_start(line, header_style, single_line):
+def _split_header_start(line, header_style, single_line, nl):
     """Move the text on the first line of a block comment to a line of its own.
 
     `<!-- text -->` becomes the start marker, the text and the end marker on
@@ -301,6 +365,8 @@ def _split_header_start(line, header_style, single_line):
         The comment style the comment is written in
     single_line
         Whether the comment ends on the same line
+    nl
+        Line ending of the lines that are written
 
     Returns
     -------
@@ -330,18 +396,18 @@ def _split_header_start(line, header_style, single_line):
         if not single_line:
             return [line]
 
-    lines = [indent + start + marker + "\n"]
+    lines = [indent + start + marker + nl]
     if text != "":
-        lines.append(indent + header_style["line"] + text + "\n")
+        lines.append(indent + header_style["line"] + text + nl)
     if single_line:
-        lines.append(indent + _closing(header_style) + "\n")
+        lines.append(indent + _closing(header_style) + nl)
         if after.strip() != "":
-            lines.append(after.strip() + "\n")
+            lines.append(after.strip() + nl)
 
     return lines
 
 
-def _split_header_end(line, header_style):
+def _split_header_end(line, header_style, nl):
     """Move the text on the last line of a block comment to a line of its own.
 
     `text */` becomes the text followed by the end marker, and code following
@@ -353,6 +419,8 @@ def _split_header_end(line, header_style):
         The last line of the comment
     header_style
         The comment style the comment is written in
+    nl
+        Line ending of the lines that are written
 
     Returns
     -------
@@ -365,15 +433,15 @@ def _split_header_end(line, header_style):
 
     lines = []
     if before.strip() == "":
-        lines.append(_closing(header_style) + "\n")
+        lines.append(_closing(header_style) + nl)
     elif _is_decoration(before):
         # Decoration, such as " **/" or "-----*/", stays with the end marker
-        lines.append(before.rstrip() + end + "\n")
+        lines.append(before.rstrip() + end + nl)
     else:
-        lines.append(before.rstrip() + "\n")
-        lines.append(_closing(header_style) + "\n")
+        lines.append(before.rstrip() + nl)
+        lines.append(_closing(header_style) + nl)
     if after.strip() != "":
-        lines.append(after.strip() + "\n")
+        lines.append(after.strip() + nl)
 
     return lines
 
@@ -455,7 +523,7 @@ def _statements(cfg):
     return statements(cfg["format"], cfg["legal"], current_year())
 
 
-def _license_content(cfg, line_prefix):
+def _license_content(cfg, line_prefix, nl):
     """The license content as header lines.
 
     The content may span several lines. Every line gets the line prefix, so
@@ -463,7 +531,7 @@ def _license_content(cfg, line_prefix):
     prefix without its trailing whitespace.
     """
     return [
-        line_prefix + text + "\n" if text.strip() != "" else line_prefix.rstrip() + "\n"
+        line_prefix + text + nl if text.strip() != "" else line_prefix.rstrip() + nl
         for text in cfg["license"]["content"].splitlines()
     ]
 
@@ -476,7 +544,7 @@ def _is_marker(line, marker, char):
     return text == marker
 
 
-def render_insert(cfg, ext, offset, lines, max_region=None):
+def render_insert(cfg, ext, offset, lines, nl, max_region=None):
     """Render the file contents with a new copyright header inserted.
 
     Parameters
@@ -489,6 +557,8 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
+    nl
+        Line ending of the lines that are written
     max_region
         Number of lines an existing header must start in, as in `analyze`
 
@@ -502,8 +572,8 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
 
     # A prologue on the last line of a file has no line ending to separate it
     # from the header that follows
-    if out and not out[-1].endswith("\n"):
-        out[-1] += "\n"
+    if out and not out[-1].endswith(("\n", "\r")):
+        out[-1] += nl
 
     start = comments.get(ext).get("start")
     char = comments.get(ext).get("char")
@@ -533,7 +603,7 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
         # For single-line comment styles (e.g. '#'), we already write a leading
         # start marker line ourselves, so drop an existing bare start marker
         # to avoid duplication. Also drop trailing bare marker since we write
-        # end + "\n" ourselves.
+        # end + nl ourselves.
         if start == end and header_body_lines:
             first = header_body_lines[0]
             if first.strip() == start:
@@ -547,40 +617,40 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     if header_detected and start != end:
         line_prefix = _infer_line_prefix_from_header_body(header_body_lines, char, line)
 
-    out.append(start + "\n")
+    out.append(start + nl)
     for statement in _statements(cfg):
-        out.append(line_prefix + statement + "\n")
+        out.append(line_prefix + statement + nl)
 
     if divider:
-        out.append(line_prefix.rstrip() + "\n")
+        out.append(line_prefix.rstrip() + nl)
     if cfg["license"]["enabled"]:
         if license_start != "":
-            out.append(line_prefix + license_start + "\n")
+            out.append(line_prefix + license_start + nl)
         if cfg["license"]["external"] is False:
-            out.extend(_license_content(cfg, line_prefix))
+            out.extend(_license_content(cfg, line_prefix, nl))
         # TODO: Read license file
         if license_end != "":
-            out.append(line_prefix + license_end + "\n")
+            out.append(line_prefix + license_end + nl)
         if divider:
-            out.append(line_prefix.rstrip() + "\n")
+            out.append(line_prefix.rstrip() + nl)
 
     if header_detected:
         # Write user header body as-is, then close the comment.
         out.extend(header_body_lines)
         if header_end_line is not None:
-            if header_end_line.endswith("\n"):
+            if header_end_line.endswith(("\n", "\r")):
                 out.append(header_end_line)
             else:
-                out.append(header_end_line + "\n")
+                out.append(header_end_line + nl)
         else:
-            out.append(end + "\n")
+            out.append(end + nl)
     else:
-        out.append(end + "\n")
+        out.append(end + nl)
 
         # A header of line comments directly followed by another line comment
         # would run into it, so the two are kept apart by an empty line
         if start == end and lines and lines[0].lstrip().startswith(start):
-            out.append("\n")
+            out.append(nl)
 
     # Append remaining lines
     out.extend(lines)
@@ -588,7 +658,7 @@ def render_insert(cfg, ext, offset, lines, max_region=None):
     return out
 
 
-def render_update(cfg, ext, offset, lines, max_region=None):
+def render_update(cfg, ext, offset, lines, nl, max_region=None):
     """Render the file contents with the existing copyright header updated.
 
     Parameters
@@ -601,6 +671,8 @@ def render_update(cfg, ext, offset, lines, max_region=None):
         Number of leading lines that must be preserved as-is (e.g. shebang)
     lines
         Original file contents
+    nl
+        Line ending of the lines that are written
     max_region
         Number of lines the header must start in, as in `analyze`
 
@@ -660,7 +732,7 @@ def render_update(cfg, ext, offset, lines, max_region=None):
         insert_at = header_start_idx
 
     for lid, statement in enumerate(_statements(cfg)):
-        lines.insert(insert_at + lid, line_prefix + statement + "\n")
+        lines.insert(insert_at + lid, line_prefix + statement + nl)
         idx = insert_at + lid
 
     # Detect license block
@@ -682,12 +754,12 @@ def render_update(cfg, ext, offset, lines, max_region=None):
         if not license_detected:
             license_lines = []
             if divider:
-                license_lines.append(line_prefix.rstrip() + "\n")
-            license_lines.append(line_prefix + license_start + "\n")
+                license_lines.append(line_prefix.rstrip() + nl)
+            license_lines.append(line_prefix + license_start + nl)
             if cfg["license"]["external"] is False:
-                license_lines.extend(_license_content(cfg, line_prefix))
+                license_lines.extend(_license_content(cfg, line_prefix, nl))
             # TODO: Read license file
-            license_lines.append(line_prefix + license_end + "\n")
+            license_lines.append(line_prefix + license_end + nl)
             lines[idx + 1 : idx + 1] = license_lines
 
     # Append all remaining lines
@@ -706,7 +778,8 @@ def analyze(cfg, ext, lines, path, args):
     ext
         Source file extension, used to look up the comment style
     lines
-        Original file contents
+        Original file contents, as read by `read_file`: without a byte order
+        mark and with the line endings of the file
     path
         Path of the source file, used for reporting
     args
@@ -721,15 +794,12 @@ def analyze(cfg, ext, lines, path, args):
     original = lines
 
     try:
-        # A byte order mark belongs in front of the whole file, it is set
-        # aside while the header is rendered
-        bom = ""
-        if lines and lines[0].startswith(BOM):
-            bom = BOM
-            lines = [lines[0][len(BOM) :]] + lines[1:]
-
         # Lines such as a shebang or doctype must stay at the top of the file
         offset = count_prologue_lines(lines, comments.get(ext)["prologue"])
+
+        # Header lines take the line ending of the lines the header is or goes
+        # in, below the prologue
+        nl = _detect_newline(lines[offset:], default=_detect_newline(lines))
 
         # Determine insert vs update by scanning the header block rather than
         # relying on a fixed line index (SQL and indented headers break that).
@@ -749,7 +819,7 @@ def analyze(cfg, ext, lines, path, args):
             header_start_idx, header_end_idx, _, _ = header
             idx = offset + header_start_idx
             split = _split_header_start(
-                lines[idx], header_style, header_start_idx == header_end_idx
+                lines[idx], header_style, header_start_idx == header_end_idx, nl
             )
             if split != [lines[idx]]:
                 lines = lines[:idx] + split + lines[idx + 1 :]
@@ -761,7 +831,7 @@ def analyze(cfg, ext, lines, path, args):
         # The same goes for text on the last line of a block comment
         if header is not None and header[3] is not None:
             idx = offset + header[1]
-            split = _split_header_end(lines[idx], header_style)
+            split = _split_header_end(lines[idx], header_style, nl)
             if split != [lines[idx]]:
                 lines = lines[:idx] + split + lines[idx + 1 :]
                 scan_lines = lines[offset:]
@@ -771,20 +841,17 @@ def analyze(cfg, ext, lines, path, args):
 
         if header is None or not _has_copyright(header[2]):
             action = "add"
-            new_lines = render_insert(cfg, ext, offset, lines, args.region)
+            new_lines = render_insert(cfg, ext, offset, lines, nl, args.region)
 
         else:
             action = "update"
-            new_lines = render_update(cfg, ext, offset, lines, args.region)
+            new_lines = render_update(cfg, ext, offset, lines, nl, args.region)
 
         for statement in outside:
             log.warning(
                 f"{path}: a copyright statement outside the header is left "
                 f'unchanged: "{statement}"'
             )
-
-        if bom:
-            new_lines = [bom + new_lines[0]] + new_lines[1:]
 
         if new_lines != original:
             return action, new_lines
@@ -801,6 +868,10 @@ def write_file(path, lines):
     moved into place, so an interrupted run cannot leave a partially written
     source file behind.
 
+    The new contents get a byte order mark when the file they replace has one,
+    and are written with the line endings of the lines, so the only difference
+    from the original is the header itself.
+
     Parameters
     ----------
     path
@@ -814,9 +885,12 @@ def write_file(path, lines):
 
     """
     target = path.absolute()
+    # The mark was consumed while reading, so whether to write one back is
+    # answered by the file we are about to replace.
+    encoding = "utf-8-sig" if _has_bom(target) else "utf-8"
     fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=target.name, suffix=".tmp")
     try:
-        with os.fdopen(fd, encoding="utf-8", mode="w") as dst:
+        with os.fdopen(fd, encoding=encoding, mode="w", newline="") as dst:
             dst.writelines(lines)
         shutil.copymode(target, tmp)
         os.replace(tmp, target)

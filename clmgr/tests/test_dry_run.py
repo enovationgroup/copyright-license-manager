@@ -1,4 +1,4 @@
-from clmgr.tests.test_base import run_dry_run_config, run_dry_run_tree
+from clmgr.tests.test_base import run_dry_run_config, run_dry_run_tree, test_dir
 
 
 def test_dry_run_add_java():
@@ -117,7 +117,9 @@ def test_dry_run_report_columns_line_up(capsys):
     run_dry_run_tree("default/", "default/single.yml", 0)
 
     captured = capsys.readouterr()
-    paths = [line.index(" /") for line in captured.err.splitlines() if " /" in line]
+    # The reported paths are absolute, on Windows they start with a drive
+    lines = captured.err.splitlines()
+    paths = [line.index(test_dir) for line in lines if test_dir in line]
 
     assert len(paths) > 1
     assert len(set(paths)) == 1

@@ -81,7 +81,7 @@ def build_tree(tmp_path):
 
 
 def relative_names(tmp_path, selected):
-    return sorted(str(path.relative_to(tmp_path)) for path in selected)
+    return sorted(path.relative_to(tmp_path).as_posix() for path in selected)
 
 
 def test_select_files_filters_on_extension(tmp_path):

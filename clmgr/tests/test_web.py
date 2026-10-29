@@ -100,6 +100,26 @@ def test_prologue_python_comment_is_not_an_encoding():
     assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
 
 
+@pytest.mark.parametrize("nl", ["\r\n", "\r"])
+def test_prologue_python_shebang_and_encoding_line_endings(nl):
+    lines = ["#!/usr/bin/env python" + nl, "# -*- coding: utf-8 -*-" + nl, "x" + nl]
+
+    assert count_prologue_lines(lines, comments["py"]["prologue"]) == 2
+
+
+@pytest.mark.parametrize("nl", ["\r\n", "\r"])
+def test_prologue_xml_declaration_and_doctype_line_endings(nl):
+    lines = ['<?xml version="1.0"?>' + nl, "<!DOCTYPE html>" + nl, "<html>" + nl]
+
+    assert count_prologue_lines(lines, comments["html"]["prologue"]) == 2
+
+
+def test_prologue_encoding_declaration_stops_at_a_cr():
+    lines = ["# note\r", "x = 'encoding: 1'\r"]
+
+    assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
+
+
 def test_prologue_doctype_after_blank_line():
     lines = ["\n", "<!DOCTYPE html>\n", "<html>\n"]
 

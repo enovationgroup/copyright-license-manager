@@ -3,15 +3,17 @@
 import re
 
 # Lines that must stay at the very top of a file, above the copyright header.
-# Every pattern consumes whole lines, starting at the beginning of a line.
-SHEBANG = re.compile(r"#![^\n]*\n?")
+# Every pattern consumes whole lines, starting at the beginning of a line. A
+# line ends with "\r\n", "\n" or "\r", as the file was written.
+REST_OF_LINE = r"[^\r\n]*(?:\r\n|\r|\n)?"
+SHEBANG = re.compile(r"#!" + REST_OF_LINE)
 # PEP 263 requires the encoding declaration on the first or second line
-CODING = re.compile(r"[ \t\f]*#[^\n]*?coding[:=][^\n]*\n?")
+CODING = re.compile(r"[ \t\f]*#[^\r\n]*?coding[:=]" + REST_OF_LINE)
 # The indented syntax of Sass has no semicolon after the rule
-CHARSET = re.compile(r"@charset[^\n]*\n?")
-XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>[^\n]*\n?")
+CHARSET = re.compile(r"@charset" + REST_OF_LINE)
+XML_DECLARATION = re.compile(r"<\?xml(?s:.*?)\?>" + REST_OF_LINE)
 # Whitespace is allowed in front of a doctype, it is kept above the header
-DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>[^\n]*\n?")
+DOCTYPE = re.compile(r"\s*<!(?i:doctype)[^>]*>" + REST_OF_LINE)
 
 # Block comments that are recognised as an existing header, in files that use
 # a different comment style for new headers. They are only recognised when they
