@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from clmgr.tests.test_base import run_dry_run_config, run_dry_run_tree, test_dir
 
 
@@ -120,8 +118,8 @@ def test_dry_run_report_columns_line_up(capsys):
 
     captured = capsys.readouterr()
     # The reported paths are absolute, on Windows they start with a drive
-    root = str(Path(test_dir))
-    paths = [line.index(root) for line in captured.err.splitlines() if root in line]
+    lines = captured.err.splitlines()
+    paths = [line.index(test_dir) for line in lines if test_dir in line]
 
     assert len(paths) > 1
     assert len(set(paths)) == 1
