@@ -62,7 +62,8 @@ def read_file(path):
     marker. Line endings are read verbatim instead of being normalised to "\n",
     which keeps every line the tool does not touch byte for byte identical.
 
-    Both properties are restored by `write_file`.
+    `write_file` writes the byte order mark back, the line endings stay in the
+    lines.
 
     Parameters
     ----------
@@ -218,7 +219,9 @@ def _find_header_block(
         before_end = after_start.split(end, 1)[0]
         body = []
         if before_end.strip() != "":
-            body.append(before_end + _detect_newline([first_line]))
+            body.append(
+                before_end + "\n" if not before_end.endswith("\n") else before_end
+            )
         return first_idx, first_idx, body, first_line
 
     scan_upto = min(len(lines), first_idx + max_header_lines)
@@ -776,7 +779,8 @@ def analyze(cfg, ext, lines, path, args):
     ext
         Source file extension, used to look up the comment style
     lines
-        Original file contents
+        Original file contents, as read by `read_file`: without a byte order
+        mark and with the line endings of the file
     path
         Path of the source file, used for reporting
     args
@@ -865,9 +869,9 @@ def write_file(path, lines):
     moved into place, so an interrupted run cannot leave a partially written
     source file behind.
 
-    A file that was read with a byte order mark is written back with one, and
-    the lines keep the endings they were read with, so the only difference from
-    the original is the header itself.
+    The new contents get a byte order mark when the file they replace has one,
+    and are written with the line endings of the lines, so the only difference
+    from the original is the header itself.
 
     Parameters
     ----------

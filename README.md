@@ -250,6 +250,10 @@ encoding declaration (`# -*- coding: utf-8 -*-`) in Python, a `@charset` rule
 in stylesheets, and an XML declaration or doctype in HTML. A byte order
 mark always stays in front of the file.
 
+Line endings are left as they are, also when a file mixes them. The lines of
+the header get the line ending of the first line below the lines that stay on
+top; a file without any line ending gets `\n`.
+
 An existing `/* */` header that holds a copyright statement is updated in
 place, even when new headers of that file type use a different comment style.
 What happens to a leading comment without a copyright statement depends on the
