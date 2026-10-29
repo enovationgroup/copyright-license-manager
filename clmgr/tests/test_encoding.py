@@ -13,9 +13,8 @@ import re
 import pytest
 
 from clmgr.main import main
-from clmgr.tests.test_idempotent import CONFIGS, OUTPUTS, scenario
-
-test_dir = os.path.dirname(os.path.realpath(__file__))
+from clmgr.tests.test_base import test_dir
+from clmgr.tests.test_idempotent import OUTPUTS, scenario_config
 
 config_file = test_dir + "/config/default/single.yml"
 
@@ -214,9 +213,6 @@ def test_byte_order_mark_stays_in_front_of_a_doctype(tmp_path):
 def test_scenario_with_other_line_endings(tmp_path, path, newline):
     """Every scenario gives the same result with other line endings"""
     relative = os.path.relpath(path, test_dir + "/output")
-    directory = relative.split(os.sep)[0]
-    name = scenario(path)
-    config = f"{test_dir}/config/{directory}/{CONFIGS.get(name, name)}.yml"
 
     def convert(file):
         with open(file, "rb") as src:
@@ -225,6 +221,6 @@ def test_scenario_with_other_line_endings(tmp_path, path, newline):
     source = tmp_path / os.path.basename(path)
     source.write_bytes(convert(test_dir + "/input/" + relative))
 
-    main(["-c", config, "--file", str(source)])
+    assert main(["-c", scenario_config(path), "--file", str(source)]) == 0
 
     assert source.read_bytes() == convert(path)
