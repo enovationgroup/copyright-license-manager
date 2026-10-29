@@ -169,3 +169,12 @@ def test_select_files_skips_installed_packages(tmp_path):
     selected = select_files(tmp_path, "js", ["**/*"], [])
 
     assert relative_names(tmp_path, selected) == ["src/app.js"]
+
+
+def test_select_files_matches_extensions_regardless_of_case(tmp_path):
+    for name in ["Main.JAVA", "Other.Java", "notes.txt"]:
+        (tmp_path / name).write_text("class A {}\n", encoding="utf-8")
+
+    selected = select_files(tmp_path, "java", [], [])
+
+    assert relative_names(tmp_path, selected) == ["Main.JAVA", "Other.Java"]

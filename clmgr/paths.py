@@ -149,7 +149,8 @@ def select_files(input_dir, ext, include, exclude):
         )
 
         for name in sorted(files):
-            if not name.endswith("." + ext):
+            # Extensions match regardless of case, as with -i/--file
+            if PurePath(name).suffix.lower() != "." + ext:
                 continue
 
             path = relative(relative_root, name)
