@@ -107,8 +107,7 @@ def test_update_preserves_encoding(tmp_path, ext, newline, bom):
 def test_up_to_date_file_is_left_alone(tmp_path, ext, newline, bom):
     """A second run must not touch a single byte, and must not add a header
 
-    A BOM used to hide the existing header from detection, so the run appended
-    a second one below the first.
+    The existing header is found behind a BOM as well.
     """
     source = write_source(tmp_path / f"sample.{ext}", ext, newline, bom)
     run(source)
@@ -167,7 +166,8 @@ def test_mixed_line_endings_are_left_as_they_are(tmp_path):
     data = source.read_bytes()
     header, body = data.split(b"using System;", 1)
 
-    # The header follows the first line ending in the file
+    # The header follows the first line ending below the prologue, the file
+    # has none, so the first line ending of the file
     assert line_endings(header) == {b"\r\n"}
     # The body keeps the endings it already had
     assert body == b"\r\n\r\nnamespace Demo\n{\n}\n"
