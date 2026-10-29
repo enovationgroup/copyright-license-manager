@@ -14,22 +14,21 @@ log = logging.getLogger("root")
 
 
 def _detect_newline(lines, default="\n"):
-    r"""Determine the line ending used by a source file.
+    r"""Determine the line ending of the lines clmgr writes.
 
     The first line ending in the lines decides. `analyze` passes the lines
     from where the header is or goes, so a prologue with a different line
-    ending, such as a shebang, does not decide for the header. Files without
-    any line ending fall back to `default`
-    rather than to the platform separator: the tool commonly runs on Linux CI
-    over repositories written on Windows, so `os.linesep` would be the wrong
-    guess there.
+    ending, such as a shebang, does not decide for the header. Lines without
+    any line ending fall back to `default` rather than to `os.linesep`, so
+    the result does not depend on the platform: on Windows `os.linesep` is
+    "\r\n".
 
     Parameters
     ----------
     lines
-        File contents, as read by `read_file`
+        Lines of a file, as read by `read_file`
     default
-        Line ending to assume for a file that contains none
+        Line ending to assume for lines that contain none
 
     Returns
     -------
