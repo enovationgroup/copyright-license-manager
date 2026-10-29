@@ -235,8 +235,16 @@ The supported types and extensions, and the comment style of their header:
 - `*` also matches a dot, so `bin/*` includes `bin/README.md` and `bin/tool.py`
   as well. To include only the files without an extension, add `bin/*.*` to the
   `exclude` of the type.
-- A file that the `include` patterns of two types select is a configuration
-  error: give it an extension, or include it in one type only.
+- A file that an `include` pattern selects is checked against its shebang.
+  When that names the interpreter of a listed type, the file gets that type:
+  with `bin/*` included in two types, `#!/usr/bin/env python3` makes a script
+  Python and `#!/usr/bin/env node` makes it JavaScript. Any other interpreter,
+  such as `#!/bin/bash`, leaves the file out; `--debug` says why. Python is run
+  by `python`, JavaScript by `node`, `nodejs`, `bun` or `deno`, and TypeScript
+  by `ts-node`, `tsx`, `bun` or `deno`, with or without a version number. Files
+  selected by their extension are not checked.
+- A file without a shebang that the `include` patterns of two types select is
+  a configuration error: give it an extension, or include it in one type only.
 - Each type is listed at most once. A file given with `-i/--file` is selected
   by the same rules.
 

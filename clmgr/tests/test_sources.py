@@ -4,6 +4,7 @@ import pytest
 import yaml
 
 from clmgr.main import main
+from clmgr.paths import interpreter, source_extension
 from clmgr.template import sources, types
 
 LEGAL = [
@@ -174,3 +175,82 @@ def test_every_extension_belongs_to_one_type():
     extensions = [ext for type_extensions in types.values() for ext in type_extensions]
 
     assert sorted(extensions) == sorted(sources)
+
+
+@pytest.mark.parametrize(
+    "first_line, name",
+    [
+        (b"#!/usr/bin/perl5.36\n", "perl"),
+        (b"#!/usr/bin/env perl\n", "perl"),
+        (b"#!/usr/bin/env -S perl -w\n", "perl"),
+        (b"#! /usr/bin/python3.11\r\n", "python"),
+        (b"#!/usr/bin/env PYTHONPATH=lib python3\n", "python"),
+        (b"#!/usr/bin/env node", "node"),
+        (b"#!\n", ""),
+        (b"print(1)\n", None),
+        (b"", None),
+    ],
+)
+def test_interpreter_of_a_shebang(tmp_path, first_line, name):
+    script = tmp_path / "script"
+    script.write_bytes(first_line)
+
+    assert interpreter(script) == name
+
+
+BIN = {"include": ["bin/*"], "exclude": ["bin/*.*"]}
+
+
+def test_shebang_decides_between_types_that_include_a_file(tmp_path, caplog):
+    code, files = run_tree(
+        tmp_path,
+        [{"type": "python", **BIN}, {"type": "javascript", **BIN}],
+        {
+            "bin/a": b"#!/usr/bin/env python3\nprint(1)\n",
+            "bin/b": b"#!/usr/bin/env node\nb();\n",
+            "bin/c": b"#!/bin/bash\necho c\n",
+        },
+        "--debug",
+    )
+
+    assert code == 0
+    assert files["bin/a"].startswith(b"#!/usr/bin/env python3\n" + HASH)
+    assert files["bin/b"].startswith(b"#!/usr/bin/env node\n" + BANNER)
+    assert files["bin/c"] == b"#!/bin/bash\necho c\n"
+    assert "Skipping bin/c, its shebang names bash" in caplog.text
+
+
+def test_shebang_of_a_type_that_does_not_include_the_file(tmp_path):
+    _, files = run_tree(
+        tmp_path,
+        [{"type": "sql", **BIN}, {"type": "python"}],
+        {"bin/a": b"#!/usr/bin/python\nprint(1)\n"},
+    )
+
+    assert files["bin/a"].startswith(b"#!/usr/bin/python\n" + HASH)
+
+
+def test_shebang_of_a_type_that_is_not_listed_skips_the_file(tmp_path):
+    _, files = run_tree(
+        tmp_path,
+        [{"type": "sql", **BIN}],
+        {"bin/a": b"#!/usr/bin/python\nprint(1)\n"},
+    )
+
+    assert files["bin/a"] == b"#!/usr/bin/python\nprint(1)\n"
+
+
+def test_include_pattern_decides_between_types_of_an_interpreter(tmp_path):
+    script = tmp_path / "tool"
+    script.write_bytes(b"#!/usr/bin/env bun\n")
+    source = [{"type": "typescript"}, {"type": "javascript", **BIN}]
+
+    assert source_extension(source, "bin/tool", script) == "js"
+
+
+def test_files_selected_by_extension_are_not_checked_for_a_shebang(tmp_path):
+    _, files = run_tree(
+        tmp_path, [{"type": "python"}], {"a.py": b"#!/usr/bin/env node\nprint(1)\n"}
+    )
+
+    assert files["a.py"].startswith(b"#!/usr/bin/env node\n" + HASH)

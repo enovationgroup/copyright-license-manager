@@ -198,6 +198,14 @@ types = {
 # The options of a type entry in the source option
 TYPE_OPTIONS = ["type", "include", "exclude"]
 
+# The interpreters that run the scripts of a type, without a version number.
+# A file included by a pattern is checked against the shebang it starts with.
+interpreters = {
+    "python": ["python"],
+    "javascript": ["node", "nodejs", "bun", "deno"],
+    "typescript": ["ts-node", "tsx", "bun", "deno"],
+}
+
 # Placeholders a copyright format may use
 placeholders = ["inception", "year", "name", "locality", "country"]
 

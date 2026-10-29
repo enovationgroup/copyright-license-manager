@@ -100,6 +100,6 @@ def select_file(input_dir, path, source):
         # On Windows a file on another drive has no relative path
         relative_path = PurePath(path.name)
 
-    ext = source_extension(source, relative_path.as_posix())
+    ext = source_extension(source, relative_path.as_posix(), path)
 
     return [] if ext is None else [(path, ext)]

@@ -6,11 +6,14 @@ pattern reads the same way it would in a `.gitignore` file.
 """
 
 from functools import lru_cache
+import logging
 import os
 from pathlib import Path, PurePath
 import re
 
-from clmgr.template import types
+from clmgr.template import interpreters, types
+
+log = logging.getLogger("root")
 
 # Directories that never hold source files of the project, such as the
 # packages installed by npm. They are skipped at any depth, whatever the
@@ -195,12 +198,47 @@ def select_files(input_dir, ext, include, exclude):
     ]
 
 
-def source_extension(source, path):
+def interpreter(file):
+    """The interpreter the shebang of a file names, without a version number
+
+    `#!/usr/bin/perl5.36`, `#!/usr/bin/env perl` and `#!/usr/bin/env -S perl -w`
+    all name `perl`.
+
+    Parameters
+    ----------
+    file
+        Path of the file
+
+    Returns
+    -------
+        The name of the interpreter, an empty string when the shebang names
+        none, or None when the file does not start with a shebang
+
+    """
+    with open(file, mode="rb") as src:
+        first_line = src.readline(1024)
+    if not first_line.startswith(b"#!"):
+        return None
+
+    words = first_line[2:].decode("utf-8", errors="replace").split()
+    # env runs the program that follows its options and variables
+    if words and words[0].rsplit("/", 1)[-1] == "env":
+        words = [w for w in words[1:] if not w.startswith("-") and "=" not in w]
+    if not words:
+        return ""
+
+    return re.sub(r"[\d.]+$", "", words[0].rsplit("/", 1)[-1])
+
+
+def source_extension(source, path, file):
     """The extension whose comment style a file gets, by the source option
 
     An include pattern of a type entry takes precedence over the extension of
-    the file. Otherwise the file is a source when its extension is listed, or
-    belongs to a listed type and is not excluded from it.
+    the file. A file it includes is checked against its shebang: when that
+    names an interpreter of a listed type, the file gets that type, any other
+    interpreter leaves the file out. Otherwise the file is a source when its
+    extension is listed, or belongs to a listed type and is not excluded from
+    it.
 
     Parameters
     ----------
@@ -208,6 +246,8 @@ def source_extension(source, path):
         The validated source option
     path
         Path of the file, relative to the input directory
+    file
+        Path of the file, to read its shebang
 
     Returns
     -------
@@ -216,7 +256,8 @@ def source_extension(source, path):
     Raises
     ------
     SourceError
-        When include patterns of more than one type match the file
+        When include patterns of more than one type match a file without a
+        shebang
 
     """
     entries = [entry for entry in source if isinstance(entry, dict)]
@@ -227,12 +268,15 @@ def source_extension(source, path):
         if matches(entry.get("include") or [], path)
         and not matches(entry.get("exclude") or [], path)
     ]
-    if len(included) > 1:
-        raise SourceError(
-            f"{path} is included by the types {' and '.join(included)}, "
-            "give it an extension or include it in one type only"
-        )
     if included:
+        name = interpreter(file)
+        if name is not None:
+            return shebang_extension(entries, included, path, name)
+        if len(included) > 1:
+            raise SourceError(
+                f"{path} is included by the types {' and '.join(included)}, "
+                "give it an extension or include it in one type only"
+            )
         return types[included[0]][0]
 
     ext = extension(path)
@@ -245,6 +289,44 @@ def source_extension(source, path):
             return ext
 
     return None
+
+
+def shebang_extension(entries, included, path, name):
+    """The extension whose comment style a file with a shebang gets
+
+    Parameters
+    ----------
+    entries
+        The type entries of the source option
+    included
+        The types whose include patterns select the file
+    path
+        Path of the file, relative to the input directory, for reporting
+    name
+        The interpreter the shebang names
+
+    Returns
+    -------
+        The first extension of the listed type the interpreter belongs to,
+        preferring the types that include the file, or None when it belongs
+        to none of them
+
+    """
+    listed = [entry["type"] for entry in entries]
+    named = [
+        type_name for type_name in listed if name in interpreters.get(type_name, [])
+    ]
+    if not named:
+        log.debug(
+            f"Skipping {path}, its shebang names {name or 'no interpreter'}, "
+            "which runs no type in the source option"
+        )
+        return None
+
+    # An interpreter may run several types, the include pattern decides
+    preferred = [type_name for type_name in named if type_name in included]
+
+    return types[(preferred or named)[0]][0]
 
 
 def select_sources(input_dir, source, include, exclude):
@@ -277,7 +359,7 @@ def select_sources(input_dir, source, include, exclude):
     errors = []
     for path, relative_path in walk(input_dir, include, exclude):
         try:
-            ext = source_extension(source, relative_path)
+            ext = source_extension(source, relative_path, path)
         except SourceError as error:
             errors.append(str(error))
             continue
