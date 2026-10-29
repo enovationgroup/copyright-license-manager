@@ -39,3 +39,43 @@ def test_format_no_change_dotnet():
 
 def test_format_no_change_sql():
     run_test_config("format/sql/", "no-change.sql", "format/no-change.yml")
+
+
+def test_no_change_javascript():
+    run_test_config("default/js/", "no-change.js", "default/no-change.yml")
+
+
+def test_no_change_css():
+    run_test_config("default/css/", "no-change.css", "default/no-change.yml")
+
+
+def test_no_change_scss():
+    run_test_config("default/scss/", "no-change.scss", "default/no-change.yml")
+
+
+def test_no_change_sass():
+    run_test_config("default/sass/", "no-change.sass", "default/no-change.yml")
+
+
+def test_no_change_html():
+    run_test_config("default/html/", "no-change.html", "default/no-change.yml")
+
+
+def test_format_no_change_javascript():
+    run_test_config("format/js/", "no-change.js", "format/no-change.yml")
+
+
+def test_format_no_change_css():
+    run_test_config("format/css/", "no-change.css", "format/no-change.yml")
+
+
+def test_format_no_change_scss():
+    run_test_config("format/scss/", "no-change.scss", "format/no-change.yml")
+
+
+def test_format_no_change_sass():
+    run_test_config("format/sass/", "no-change.sass", "format/no-change.yml")
+
+
+def test_format_no_change_html():
+    run_test_config("format/html/", "no-change.html", "format/no-change.yml")

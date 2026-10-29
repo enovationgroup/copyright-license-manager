@@ -8,7 +8,7 @@ import sys
 import yaml
 
 from clmgr.__version__ import get_versions
-from clmgr.template import licenses, placeholders, sources
+from clmgr.template import comments, licenses, placeholders, sources, statements
 
 log = logging.getLogger("root")
 
@@ -17,6 +17,22 @@ REQUIRED_OPTIONS = ["source", "legal"]
 
 # Properties every entry of the legal option must define
 REQUIRED_LEGAL_PROPERTIES = ["inception", "name", "locality", "country"]
+
+DEFAULT_FORMAT = (
+    "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
+    "[{name} - {locality} - {country}]"
+)
+
+
+def positive_int(value):
+    """Parse a commandline value that must be a whole number of at least 1"""
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"must be a whole number, got '{value}'")
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, got {value}")
+    return number
 
 
 def parse_args(args):
@@ -40,8 +56,9 @@ def parse_args(args):
     )
     parser.add_argument(
         "--region",
-        help="Copyright search region; default=10",
-        type=int,
+        help="Number of lines the header must start in, after a shebang or other "
+        "lines that stay on top; default=10",
+        type=positive_int,
         default=10,
         metavar="REGION",
     )
@@ -175,8 +192,13 @@ def validate_config(cfg, config_file):
 
     if not errors:
         errors.extend(validate_source(cfg["source"]))
-        errors.extend(validate_legal(cfg["legal"]))
-        errors.extend(validate_format(cfg.get("format")))
+        rendering_errors = validate_legal(cfg["legal"])
+        rendering_errors += validate_format(cfg.get("format"))
+        errors.extend(rendering_errors)
+
+        # The copyright statements can only be rendered from a valid format
+        # and complete legal entities, the license content is always checked
+        errors.extend(validate_markup(cfg, check_copyright=not rendering_errors))
 
     if errors:
         for error in errors:
@@ -200,18 +222,85 @@ def validate_format(copyright_format):
     if copyright_format is None:
         return []
 
+    # A placeholder without a name, such as {}, has an empty name
     used = [
         name.split(".")[0].split("[")[0]
         for _, name, _, _ in Formatter().parse(copyright_format)
-        if name
+        if name is not None
     ]
 
-    return [
-        f"format uses unknown placeholder '{name}', "
-        f"available are: {', '.join(placeholders)}"
+    errors = []
+
+    # Existing copyright statements are recognised by this word, without it
+    # every run would add the statements again
+    if "Copyright" not in copyright_format:
+        errors.append("format must contain the word 'Copyright'")
+
+    return errors + [
+        (
+            f"format uses unknown placeholder '{name}', "
+            if name
+            else "format uses a placeholder without a name '{}', "
+        )
+        + f"available are: {', '.join(placeholders)}"
         for name in used
         if name not in placeholders
     ]
+
+
+def validate_markup(cfg, check_copyright=True):
+    """Verify that the header text can be written into a markup comment
+
+    A markup comment such as <!-- --> must not contain "--", so neither the
+    copyright statements nor the license content may contain it when a markup
+    source is configured.
+
+    Parameters
+    ----------
+    cfg
+        Parsed configuration
+    check_copyright
+        Whether to check the copyright statements, which requires a valid
+        format and complete legal entities to render them
+
+    Returns
+    -------
+        The problems found
+
+    """
+    # Unsupported sources are reported by validate_source
+    markup = [
+        ext for ext in cfg["source"] if ext in sources and comments[ext]["markup"]
+    ]
+    if not markup:
+        return []
+
+    errors = []
+    # The configuration is validated before its defaults are filled in
+    copyright_format = cfg.get("format") or DEFAULT_FORMAT
+    legal = cfg["legal"] if check_copyright else []
+    # A year never contains "--", so any year will do
+    for idx, statement in enumerate(statements(copyright_format, legal, 0)):
+        if "--" in statement:
+            errors.append(
+                f"copyright of legal entity [{idx}] contains '--', "
+                f"which is not allowed in {', '.join(markup)} comments"
+            )
+
+    # The content is only written when the license is enabled and not external
+    license_cfg = cfg.get("license")
+    written = (
+        isinstance(license_cfg, dict)
+        and license_cfg.get("enabled")
+        and not license_cfg.get("external")
+    )
+    if written and "--" in str(license_cfg.get("content", "")):
+        errors.append(
+            f"license content contains '--', "
+            f"which is not allowed in {', '.join(markup)} comments"
+        )
+
+    return errors
 
 
 def validate_legal(legal):
@@ -256,9 +345,6 @@ def apply_config_defaults(cfg):
         if cfg["license"].get("content") is None:
             cfg["license"]["content"] = licenses.get("default")
     if cfg.get("format") is None:
-        cfg["format"] = (
-            "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
-            "[{name} - {locality} - {country}]"
-        )
+        cfg["format"] = DEFAULT_FORMAT
 
     return cfg
