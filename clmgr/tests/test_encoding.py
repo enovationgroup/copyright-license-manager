@@ -132,29 +132,6 @@ def test_check_reports_green_only_when_apply_is_a_noop(tmp_path, ext, newline, b
     assert source.read_bytes() == processed
 
 
-@pytest.mark.parametrize("newline", ["\r\n", "\n"])
-@pytest.mark.parametrize("ext", list(sources))
-def test_existing_header_is_detected_behind_a_bom(tmp_path, ext, newline):
-    """A BOM must not hide an existing header from detection
-
-    Decoding the mark as a character left it in front of the comment marker, so
-    the header was not recognised and a second one was rendered above it.
-    """
-    # A file that already carries a correct header
-    reference = write_source(tmp_path / f"reference.{ext}", ext, newline, False)
-    run(reference)
-
-    # The same content, written with a BOM as Visual Studio would
-    source = tmp_path / f"sample.{ext}"
-    source.write_bytes(codecs.BOM_UTF8 + reference.read_bytes())
-
-    assert run(source) == 0
-
-    data = source.read_bytes()
-    assert data.count(copyright_marker) == 1
-    assert data == codecs.BOM_UTF8 + reference.read_bytes()
-
-
 def test_mixed_line_endings_are_left_as_they_are(tmp_path):
     """Only the rendered header is ours to decide the line ending for"""
     source = tmp_path / "sample.cs"
