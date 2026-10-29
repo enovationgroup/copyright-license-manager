@@ -12,8 +12,6 @@ from clmgr.template import comments, statements
 
 log = logging.getLogger("root")
 
-BOM = "\ufeff"
-
 
 def _detect_newline(lines, default="\n"):
     r"""Determine the line ending used by a source file.
@@ -789,13 +787,6 @@ def analyze(cfg, ext, lines, path, args):
     original = lines
 
     try:
-        # A byte order mark belongs in front of the whole file, it is set
-        # aside while the header is rendered
-        bom = ""
-        if lines and lines[0].startswith(BOM):
-            bom = BOM
-            lines = [lines[0][len(BOM) :]] + lines[1:]
-
         # Lines such as a shebang or doctype must stay at the top of the file
         offset = count_prologue_lines(lines, comments.get(ext)["prologue"])
         nl = _detect_newline(lines)
@@ -851,9 +842,6 @@ def analyze(cfg, ext, lines, path, args):
                 f"{path}: a copyright statement outside the header is left "
                 f'unchanged: "{statement}"'
             )
-
-        if bom:
-            new_lines = [bom + new_lines[0]] + new_lines[1:]
 
         if new_lines != original:
             return action, new_lines

@@ -161,21 +161,6 @@ def test_separator_is_not_a_license_marker():
     assert "  ===\n  All rights reserved.\n  ===\n" in text
 
 
-def test_byte_order_mark_stays_in_front():
-    action, text = run("html", "﻿<!DOCTYPE html>\n<html>\n")
-
-    assert action == "add"
-    assert text.startswith("﻿<!DOCTYPE html>\n<!--\n")
-
-
-def test_byte_order_mark_stays_in_front_dotnet():
-    action, text = run("cs", "﻿using System;\n")
-
-    assert action == "add"
-    assert text.startswith("﻿/****")
-    assert text.count("﻿") == 1
-
-
 def test_start_line_without_text_is_left_alone():
     text = f"/*   \n * {SPDX}\n *\n * ---\n * All rights reserved.\n * ---\n */\nclass A {{}}\n"
 

@@ -18,11 +18,13 @@ test_dir = os.path.dirname(os.path.realpath(__file__))
 
 config_file = test_dir + "/config/default/single.yml"
 
-# A source file per comment style: block comments (cs, sql) and line comments (py)
+# A source file per comment style: block comments (cs, sql), line comments (py)
+# and markup with a doctype that stays above the header (html)
 sources = {
     "cs": ["using System;", "", "namespace Demo", "{", "}"],
     "py": ["import os", "", "print(os.name)"],
     "sql": ["select 1;"],
+    "html": ["<!DOCTYPE html>", "<html>", "</html>"],
 }
 
 copyright_marker = b"SPDX-FileCopyrightText"
@@ -171,3 +173,11 @@ def test_mixed_line_endings_are_left_as_they_are(tmp_path):
 
 def line_endings_of(data):
     return set(re.findall(rb"\r\n|\r|\n", data))
+
+
+def test_byte_order_mark_stays_in_front_of_a_doctype(tmp_path):
+    source = write_source(tmp_path / "sample.html", "html", "\n", True)
+
+    assert run(source) == 0
+
+    assert source.read_bytes().startswith(codecs.BOM_UTF8 + b"<!DOCTYPE html>\n<!--\n")
