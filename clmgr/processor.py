@@ -114,8 +114,8 @@ def count_prologue_lines(lines, prologue):
             pos = match.end()
 
     consumed = text[:pos]
-    count = consumed.count("\n")
-    if consumed and not consumed.endswith("\n"):
+    count = len(re.findall(r"\r\n|\r|\n", consumed))
+    if consumed and not consumed.endswith(("\n", "\r")):
         count += 1
 
     return count
