@@ -114,7 +114,7 @@ def test_prologue_xml_declaration_and_doctype_line_endings(nl):
     assert count_prologue_lines(lines, comments["html"]["prologue"]) == 2
 
 
-def test_prologue_python_encoding_is_one_line():
+def test_prologue_encoding_declaration_stops_at_a_cr():
     lines = ["# note\r", "x = 'encoding: 1'\r"]
 
     assert count_prologue_lines(lines, comments["py"]["prologue"]) == 0
