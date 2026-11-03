@@ -1,5 +1,8 @@
 """Which files clmgr processes, and in which comment style"""
 
+import os
+import sys
+
 import pytest
 import yaml
 
@@ -297,3 +300,31 @@ def test_included_file_keeps_its_own_extension_in_the_type(tmp_path):
     )
 
     assert files["components/a.vue"].startswith(MARKUP)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs symbolic links and pipes")
+def test_only_regular_files_are_selected(tmp_path):
+    bin_dir = tmp_path / "project/bin"
+    bin_dir.mkdir(parents=True)
+    os.symlink(tmp_path / "missing", bin_dir / "broken")
+    os.mkfifo(bin_dir / "pipe")
+
+    code, files = run_tree(
+        tmp_path, [{"type": "python", **BIN}], {"bin/tool": b"print(1)\n"}
+    )
+
+    assert code == 0
+    assert files["bin/tool"].startswith(HASH)
+
+
+def test_single_file_that_does_not_exist_is_skipped(tmp_path, caplog):
+    code, _ = run_tree(
+        tmp_path,
+        ["py"],
+        {"a.py": b"print(1)\n"},
+        "--file",
+        str(tmp_path / "project/missing.py"),
+    )
+
+    assert code == 0
+    assert "missing.py, it is not a file" in caplog.text

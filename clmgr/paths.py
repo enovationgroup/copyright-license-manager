@@ -143,8 +143,8 @@ def walk(input_dir, include, exclude):
 
     Returns
     -------
-        Tuples (path, relative) of every selected file, in a stable order,
-        with its path relative to the input directory
+        Tuples (path, relative) of every selected regular file, in a stable
+        order, with its path relative to the input directory
 
     """
     for root, dirs, files in os.walk(input_dir, topdown=True):
@@ -159,6 +159,12 @@ def walk(input_dir, include, exclude):
         )
 
         for name in sorted(files):
+            # Only a regular file can be read, a broken link or a named pipe
+            # cannot, or would block the run
+            if not os.path.isfile(os.path.join(root, name)):
+                log.debug(f"Skipping {os.path.join(root, name)}, it is not a file")
+                continue
+
             path = relative(relative_root, name)
             if include and not matches(include, path):
                 continue
@@ -412,6 +418,10 @@ def select_file(input_dir, path, source):
         When the source option assigns the file to more than one type
 
     """
+    if not path.is_file():
+        log.warning(f"Skipping {path}, it is not a file")
+        return []
+
     try:
         relative_path = PurePath(os.path.relpath(path.absolute(), input_dir))
     except ValueError:
