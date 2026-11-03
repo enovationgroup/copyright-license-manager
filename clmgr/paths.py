@@ -237,12 +237,13 @@ def type_entries(source):
 def comment_extension(source, path, file):
     """The extension whose comment style a file gets, by the source option
 
-    An include pattern of a type entry takes precedence over the extension of
-    the file. A file it includes is checked against its shebang: when that
-    names an interpreter of a listed type, the file gets that type, any other
-    interpreter leaves the file out. Otherwise the file is a source when its
-    extension is listed, or belongs to a listed type and is not excluded from
-    it.
+    An extension listed as a plain value claims every file with that
+    extension. An include pattern of a type entry claims the other files it
+    matches, and takes precedence over the extensions of the types. A file it
+    includes is checked against its shebang: when that names an interpreter
+    of a listed type, the file gets that type, any other interpreter leaves
+    the file out. Otherwise the file is a source when its extension belongs
+    to a listed type that does not exclude it.
 
     Parameters
     ----------
@@ -264,6 +265,10 @@ def comment_extension(source, path, file):
         shebang
 
     """
+    ext = extension(path)
+    if ext in source:
+        return ext
+
     # A type that excludes the file does not get it in any way
     entries = [
         entry for entry in type_entries(source) if not matches(entry["exclude"], path)
@@ -284,9 +289,6 @@ def comment_extension(source, path, file):
             )
         return included[0]["extensions"][0]
 
-    ext = extension(path)
-    if ext in source:
-        return ext
     for entry in entries:
         if ext in entry["extensions"]:
             return ext

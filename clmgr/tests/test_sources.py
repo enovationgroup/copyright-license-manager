@@ -266,3 +266,14 @@ def test_shebang_does_not_pick_a_type_that_excludes_the_file(tmp_path):
     )
 
     assert files["bin/a"] == b"#!/usr/bin/env node\na();\n"
+
+
+def test_plain_extension_takes_precedence_over_an_include_pattern(tmp_path):
+    _, files = run_tree(
+        tmp_path,
+        ["py", {"type": "sql", "include": ["bin/*"]}],
+        {"bin/tool.py": b"print(1)\n", "bin/query": b"select 1;\n"},
+    )
+
+    assert files["bin/tool.py"].startswith(HASH)
+    assert files["bin/query"].startswith(b"/*\n")

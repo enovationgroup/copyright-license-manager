@@ -228,10 +228,12 @@ The supported types and extensions, and the comment style of their header:
 - `include` adds files to a type, they get the header of the first extension of
   the type. `exclude` takes files out of that type only. The patterns work like
   the top-level `include` and `exclude`, which keep applying to every file.
-- An `include` pattern takes precedence over the extension of a file. Qt
-  translation files, for example, are XML files with the extension `ts`:
-  `- type: markup` with `include: ["translations/*.ts"]` gives them a markup
-  header, while the other `ts` files get the banner.
+- An extension listed as a plain value claims every file with that extension,
+  also in a folder that a type includes. An `include` pattern takes precedence
+  over the extensions of the types. Qt translation files, for example, are XML
+  files with the extension `ts`: with `- type: typescript` and `- type: markup`
+  with `include: ["translations/*.ts"]` they get a markup header, while the
+  other `ts` files get the banner.
 - `*` also matches a dot, so `bin/*` includes `bin/README.md` and `bin/tool.py`
   as well. To include only the files without an extension, add `bin/*.*` to the
   `exclude` of the type.
