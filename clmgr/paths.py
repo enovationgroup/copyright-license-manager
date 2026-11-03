@@ -5,6 +5,7 @@ matched against the path of a source file relative to the input directory, so a
 pattern reads the same way it would in a `.gitignore` file.
 """
 
+import codecs
 from functools import lru_cache
 import logging
 import os
@@ -186,12 +187,15 @@ def extension(path):
 # selects, to recognise a binary file and to read the shebang
 START_SIZE = 8000
 
+# Options of env that take the next word as their value
+ENV_OPTIONS_WITH_VALUE = ["-u", "-C", "-P"]
+
 
 def interpreter(start):
     """The interpreter the shebang of a file names, without a version number
 
     `#!/usr/bin/perl5.36`, `#!/usr/bin/env perl` and `#!/usr/bin/env -S perl -w`
-    all name `perl`.
+    all name `perl`, `#!C:\\Python39\\python.exe` names `python`.
 
     Parameters
     ----------
@@ -205,17 +209,29 @@ def interpreter(start):
 
     """
     first_line = start.split(b"\n", 1)[0]
+    if first_line.startswith(codecs.BOM_UTF8):
+        first_line = first_line[len(codecs.BOM_UTF8) :]
     if not first_line.startswith(b"#!"):
         return None
 
     words = first_line[2:].decode("utf-8", errors="replace").split()
     # env runs the program that follows its options and variables
-    if words and words[0].rsplit("/", 1)[-1] == "env":
-        words = [w for w in words[1:] if not w.startswith("-") and "=" not in w]
+    if words and program(words[0]) == "env":
+        words = words[1:]
+        while words and (words[0].startswith("-") or "=" in words[0]):
+            option = words.pop(0)
+            if option in ENV_OPTIONS_WITH_VALUE:
+                words = words[1:]
     if not words:
         return ""
 
-    return re.sub(r"[\d.]+$", "", words[0].rsplit("/", 1)[-1])
+    return re.sub(r"[\d.]+$", "", program(words[0]))
+
+
+def program(word):
+    """The name of the program a path in a shebang runs, without .exe"""
+    name = re.split(r"[/\\]", word)[-1]
+    return re.sub(r"\.exe$", "", name, flags=re.IGNORECASE)
 
 
 def type_entries(source):
