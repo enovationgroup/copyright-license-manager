@@ -31,6 +31,13 @@ def scenario(path):
     return name.replace("_", "-")
 
 
+def scenario_config(path):
+    """The configuration of the scenario an expected output belongs to"""
+    directory = os.path.relpath(path, test_dir + "/output").split(os.sep)[0]
+    name = scenario(path)
+    return f"{test_dir}/config/{directory}/{CONFIGS.get(name, name)}.yml"
+
+
 def test_every_source_has_output():
     extensions = {os.path.basename(path).rsplit(".", 1)[1] for path in OUTPUTS}
 
@@ -41,12 +48,10 @@ def test_every_source_has_output():
     "path", OUTPUTS, ids=[os.path.relpath(p, test_dir) for p in OUTPUTS]
 )
 def test_second_run_changes_nothing(path):
-    directory = os.path.relpath(path, test_dir + "/output").split(os.sep)[0]
-    name = scenario(path)
-    config = f"{test_dir}/config/{directory}/{CONFIGS.get(name, name)}.yml"
+    config = scenario_config(path)
     assert os.path.exists(
         config
-    ), f"no configuration for scenario '{name}', add it to CONFIGS"
+    ), f"no configuration for scenario '{scenario(path)}', add it to CONFIGS"
     assert_source_configured(config, path)
 
     assert main(["-c", config, "--file", path, "--check"]) == 0
