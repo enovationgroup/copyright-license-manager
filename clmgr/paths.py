@@ -264,13 +264,12 @@ def comment_extension(source, path, file):
         shebang
 
     """
-    entries = type_entries(source)
-
-    included = [
-        entry
-        for entry in entries
-        if matches(entry["include"], path) and not matches(entry["exclude"], path)
+    # A type that excludes the file does not get it in any way
+    entries = [
+        entry for entry in type_entries(source) if not matches(entry["exclude"], path)
     ]
+
+    included = [entry for entry in entries if matches(entry["include"], path)]
     if included:
         name = interpreter(file)
         if name is not None:
@@ -289,7 +288,7 @@ def comment_extension(source, path, file):
     if ext in source:
         return ext
     for entry in entries:
-        if ext in entry["extensions"] and not matches(entry["exclude"], path):
+        if ext in entry["extensions"]:
             return ext
 
     return None

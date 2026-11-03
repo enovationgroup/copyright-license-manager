@@ -256,3 +256,13 @@ def test_files_selected_by_extension_are_not_checked_for_a_shebang(tmp_path):
     )
 
     assert files["a.py"].startswith(b"#!/usr/bin/env node\n" + HASH)
+
+
+def test_shebang_does_not_pick_a_type_that_excludes_the_file(tmp_path):
+    _, files = run_tree(
+        tmp_path,
+        [{"type": "python", **BIN}, {"type": "javascript", "exclude": ["bin/*"]}],
+        {"bin/a": b"#!/usr/bin/env node\na();\n"},
+    )
+
+    assert files["bin/a"] == b"#!/usr/bin/env node\na();\n"
