@@ -339,3 +339,21 @@ def test_binary_file_that_a_type_includes_is_skipped(tmp_path):
     assert code == 0
     assert files["bin/blob"] == blob
     assert files["bin/tool"].startswith(b"#!/usr/bin/python\n" + HASH)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs symbolic links")
+def test_single_file_in_an_input_directory_given_by_a_link(tmp_path):
+    project = tmp_path / "project"
+    (project / "bin").mkdir(parents=True)
+    (project / "bin/tool").write_bytes(b"print(1)\n")
+    os.symlink(project, tmp_path / "link")
+    config = tmp_path / "copyright.yml"
+    config.write_text(
+        yaml.safe_dump({"source": [{"type": "python", **BIN}], "legal": LEGAL}),
+        "utf-8",
+    )
+
+    args = ["-c", str(config), "-d", str(tmp_path / "link")]
+    assert main(args + ["--file", str(project / "bin/tool")]) == 0
+
+    assert (project / "bin/tool").read_bytes().startswith(HASH)

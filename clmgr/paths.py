@@ -407,7 +407,9 @@ def select_file(input_dir, path, source):
     """Select a single file given with -i/--file, by the source option
 
     The include patterns of a type are matched against the path relative to
-    the input directory, as when the directory is walked.
+    the input directory, as when the directory is walked. Symbolic links are
+    resolved first, so a file given by its real path is found in an input
+    directory given by a link, and the other way around.
 
     Parameters
     ----------
@@ -434,7 +436,9 @@ def select_file(input_dir, path, source):
         return []
 
     try:
-        relative_path = PurePath(os.path.relpath(path.absolute(), input_dir))
+        relative_path = PurePath(
+            os.path.relpath(path.resolve(), Path(input_dir).resolve())
+        )
     except ValueError:
         # On Windows a file on another drive has no relative path
         relative_path = PurePath(path.name)
