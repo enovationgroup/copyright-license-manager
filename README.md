@@ -30,6 +30,8 @@ Current supported languages
 - Stylesheets (`css`, `scss`, `sass`, `less`)
 - Markup (`html`, `htm`, `vue`, `svelte`)
 
+Files are selected by their extension or as a file type, see [source](#source).
+
 ## Usage
 
 Basic usage:
@@ -172,6 +174,7 @@ source:
   - java
   - cs
   - ts
+  - type: javascript
 include:
   - "src/**/*"
 exclude:
@@ -224,7 +227,8 @@ The supported types and extensions, and the comment style of their header:
 | `sass`       | `sass`                         | `//` line comments                            |
 | `markup`     | `html`, `htm`, `vue`, `svelte` | `<!-- ... -->`, with `===` around the license |
 
-- Extensions match regardless of case, so `Main.JAVA` is a Java file.
+- Extensions match regardless of case, so `Main.JAVA` is a Java file. Patterns
+  are case-sensitive, as in a `.gitignore` file.
 - `include` adds files to a type. A file with an extension of the type gets the
   header for its own extension, any other file the header for the first
   extension of the type. `exclude` takes files out of that type only. The patterns work like
@@ -248,8 +252,12 @@ The supported types and extensions, and the comment style of their header:
   selected by their extension are not checked.
 - A file without a shebang that the `include` patterns of two types select is
   a configuration error: give it an extension, or include it in one type only.
-- Each type is listed at most once. A file given with `-i/--file` is selected
-  by the same rules.
+- A binary file that an `include` pattern selects, recognised by a NUL byte
+  near its start as git does, is skipped.
+- A file given with `-i/--file` is selected by the same rules.
+- clmgr reports a configuration error for an unknown type, a type that is
+  listed more than once, an entry without a type or with an unknown option,
+  and `include` or `exclude` that is not a list of patterns.
 
 JSON has no comments, so a copyright header cannot be added to it. Minified
 files are usually generated and are best left out with an `exclude` pattern
