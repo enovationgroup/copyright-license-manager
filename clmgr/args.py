@@ -9,7 +9,6 @@ import yaml
 
 from clmgr.__version__ import get_versions
 from clmgr.template import (
-    TYPE_OPTIONS,
     comments,
     licenses,
     placeholders,
@@ -25,6 +24,9 @@ REQUIRED_OPTIONS = ["source", "legal"]
 
 # Properties every entry of the legal option must define
 REQUIRED_LEGAL_PROPERTIES = ["inception", "name", "locality", "country"]
+
+# The options of a type entry in the source option
+TYPE_OPTIONS = ["type", "include", "exclude"]
 
 DEFAULT_FORMAT = (
     "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
@@ -221,7 +223,6 @@ def validate_source(source):
     file type, optionally with include and exclude patterns for that type.
     """
     errors = []
-    listed = []
     for idx, entry in enumerate(source):
         if isinstance(entry, str):
             if entry not in sources:
@@ -230,17 +231,28 @@ def validate_source(source):
                     f"supported are: {', '.join(sorted(sources))}"
                 )
         elif isinstance(entry, dict):
-            errors.extend(validate_type_entry(idx, entry, listed))
+            errors.extend(validate_type_entry(idx, entry))
         else:
             errors.append(
                 f"source entry [{idx}] must be a file extension "
                 "or a mapping with a type"
             )
 
+    listed = [
+        entry["type"]
+        for entry in source
+        if isinstance(entry, dict) and entry.get("type") in types
+    ]
+    errors.extend(
+        f"source type '{name}' is listed more than once"
+        for name in dict.fromkeys(listed)
+        if listed.count(name) > 1
+    )
+
     return errors
 
 
-def validate_type_entry(idx, entry, listed):
+def validate_type_entry(idx, entry):
     """Verify a source entry that selects a file type
 
     Parameters
@@ -249,9 +261,6 @@ def validate_type_entry(idx, entry, listed):
         Position of the entry in the source option, used for reporting
     entry
         The entry, a mapping
-    listed
-        The types of the entries before this one, the type of this entry is
-        added to it
 
     Returns
     -------
@@ -273,9 +282,6 @@ def validate_type_entry(idx, entry, listed):
             f"source type '{name}' is not supported, "
             f"supported are: {', '.join(sorted(types))}"
         ]
-    if name in listed:
-        errors.append(f"source type '{name}' is listed more than once")
-    listed.append(name)
 
     for option in ["include", "exclude"]:
         patterns = entry.get(option)
@@ -296,7 +302,7 @@ def source_extensions(source):
         if isinstance(entry, str) and entry in sources:
             extensions.append(entry)
         elif isinstance(entry, dict) and entry.get("type") in types:
-            extensions.extend(types[entry["type"]])
+            extensions.extend(types[entry["type"]]["extensions"])
 
     # An extension may be listed and belong to a listed type as well
     return list(dict.fromkeys(extensions))

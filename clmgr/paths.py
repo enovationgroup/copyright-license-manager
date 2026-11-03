@@ -11,7 +11,7 @@ import os
 from pathlib import Path, PurePath
 import re
 
-from clmgr.template import interpreters, types
+from clmgr.template import types
 
 log = logging.getLogger("root")
 
@@ -122,7 +122,11 @@ def matches(patterns, path):
 
 
 class SourceError(Exception):
-    """A file that the source option assigns to more than one file type"""
+    """Files that the source option assigns to more than one file type"""
+
+    def __init__(self, messages):
+        super().__init__("\n".join(messages))
+        self.messages = messages
 
 
 def walk(input_dir, include, exclude):
@@ -204,7 +208,33 @@ def interpreter(file):
     return re.sub(r"[\d.]+$", "", words[0].rsplit("/", 1)[-1])
 
 
-def source_extension(source, path, file):
+def type_entries(source):
+    """The type entries of the source option, with the definition of each type
+
+    Parameters
+    ----------
+    source
+        The validated source option
+
+    Returns
+    -------
+        A mapping per type entry, with its type, the extensions and
+        interpreters of the type, and its include and exclude patterns
+
+    """
+    return [
+        {
+            "type": entry["type"],
+            **types[entry["type"]],
+            "include": entry.get("include") or [],
+            "exclude": entry.get("exclude") or [],
+        }
+        for entry in source
+        if isinstance(entry, dict)
+    ]
+
+
+def comment_extension(source, path, file):
     """The extension whose comment style a file gets, by the source option
 
     An include pattern of a type entry takes precedence over the extension of
@@ -234,32 +264,32 @@ def source_extension(source, path, file):
         shebang
 
     """
-    entries = [entry for entry in source if isinstance(entry, dict)]
+    entries = type_entries(source)
 
     included = [
-        entry["type"]
+        entry
         for entry in entries
-        if matches(entry.get("include") or [], path)
-        and not matches(entry.get("exclude") or [], path)
+        if matches(entry["include"], path) and not matches(entry["exclude"], path)
     ]
     if included:
         name = interpreter(file)
         if name is not None:
             return shebang_extension(entries, included, path, name)
         if len(included) > 1:
+            names = " and ".join(entry["type"] for entry in included)
             raise SourceError(
-                f"{path} is included by the types {' and '.join(included)}, "
-                "give it an extension or include it in one type only"
+                [
+                    f"{path} is included by the types {names}, "
+                    "give it an extension or include it in one type only"
+                ]
             )
-        return types[included[0]][0]
+        return included[0]["extensions"][0]
 
     ext = extension(path)
     if ext in source:
         return ext
     for entry in entries:
-        if ext in types[entry["type"]] and not matches(
-            entry.get("exclude") or [], path
-        ):
+        if ext in entry["extensions"] and not matches(entry["exclude"], path):
             return ext
 
     return None
@@ -271,9 +301,9 @@ def shebang_extension(entries, included, path, name):
     Parameters
     ----------
     entries
-        The type entries of the source option
+        The type entries of the source option, as `type_entries` returns them
     included
-        The types whose include patterns select the file
+        The entries whose include patterns select the file
     path
         Path of the file, relative to the input directory, for reporting
     name
@@ -286,10 +316,7 @@ def shebang_extension(entries, included, path, name):
         to none of them
 
     """
-    listed = [entry["type"] for entry in entries]
-    named = [
-        type_name for type_name in listed if name in interpreters.get(type_name, [])
-    ]
+    named = [entry for entry in entries if name in entry["interpreters"]]
     if not named:
         log.debug(
             f"Skipping {path}, its shebang names {name or 'no interpreter'}, "
@@ -298,9 +325,9 @@ def shebang_extension(entries, included, path, name):
         return None
 
     # An interpreter may run several types, the include pattern decides
-    preferred = [type_name for type_name in named if type_name in included]
+    preferred = [entry for entry in named if entry in included]
 
-    return types[(preferred or named)[0]][0]
+    return (preferred or named)[0]["extensions"][0]
 
 
 def select_sources(input_dir, source, include, exclude):
@@ -333,17 +360,54 @@ def select_sources(input_dir, source, include, exclude):
     errors = []
     for path, relative_path in walk(input_dir, include, exclude):
         try:
-            ext = source_extension(source, relative_path, path)
+            ext = comment_extension(source, relative_path, path)
         except SourceError as error:
-            errors.append(str(error))
+            errors.extend(error.messages)
             continue
         if ext is not None:
             selected.append((path, ext))
 
     if errors:
-        raise SourceError("\n".join(errors))
+        raise SourceError(errors)
 
     return selected
+
+
+def select_file(input_dir, path, source):
+    """Select a single file given with -i/--file, by the source option
+
+    The include patterns of a type are matched against the path relative to
+    the input directory, as when the directory is walked.
+
+    Parameters
+    ----------
+    input_dir
+        The input directory
+    path
+        Path of the file
+    source
+        The validated source option
+
+    Returns
+    -------
+        A list with the tuple (path, ext), or an empty list when the file is
+        not a source
+
+    Raises
+    ------
+    SourceError
+        When the source option assigns the file to more than one type
+
+    """
+    try:
+        relative_path = PurePath(os.path.relpath(path.absolute(), input_dir))
+    except ValueError:
+        # On Windows a file on another drive has no relative path
+        relative_path = PurePath(path.name)
+
+    ext = comment_extension(source, relative_path.as_posix(), path)
+
+    return [] if ext is None else [(path, ext)]
 
 
 def relative(relative_root, name):

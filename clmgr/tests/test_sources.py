@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from clmgr.main import main
-from clmgr.paths import interpreter, source_extension
+from clmgr.paths import comment_extension, interpreter
 from clmgr.template import sources, types
 
 LEGAL = [
@@ -172,7 +172,9 @@ def test_single_file_follows_the_same_rules(tmp_path):
 
 
 def test_every_extension_belongs_to_one_type():
-    extensions = [ext for type_extensions in types.values() for ext in type_extensions]
+    extensions = [
+        ext for file_type in types.values() for ext in file_type["extensions"]
+    ]
 
     assert sorted(extensions) == sorted(sources)
 
@@ -245,7 +247,7 @@ def test_include_pattern_decides_between_types_of_an_interpreter(tmp_path):
     script.write_bytes(b"#!/usr/bin/env bun\n")
     source = [{"type": "typescript"}, {"type": "javascript", **BIN}]
 
-    assert source_extension(source, "bin/tool", script) == "js"
+    assert comment_extension(source, "bin/tool", script) == "js"
 
 
 def test_files_selected_by_extension_are_not_checked_for_a_shebang(tmp_path):

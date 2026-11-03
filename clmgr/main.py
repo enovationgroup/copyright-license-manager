@@ -1,7 +1,6 @@
-import os
 import sys
 
-from pathlib import Path, PurePath
+from pathlib import Path
 from pprint import pformat
 
 from clmgr.args import (
@@ -16,7 +15,7 @@ from clmgr.args import (
 )
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
-from clmgr.paths import SourceError, select_sources, source_extension
+from clmgr.paths import SourceError, select_file, select_sources
 from clmgr.processor import analyze
 
 log = setup_custom_logger("root")
@@ -57,7 +56,7 @@ def main(args=None):
                 input_dir, cfg["source"], cfg["include"], cfg["exclude"]
             )
     except SourceError as error:
-        for message in str(error).splitlines():
+        for message in error.messages:
             log.error(message)
         sys.exit(2)
 
@@ -80,26 +79,3 @@ def main(args=None):
     handler.summarize()
 
     return handler.exit_code()
-
-
-def select_file(input_dir, path, source):
-    """Select a single file given with -i/--file, by the source option
-
-    The include patterns of a type are matched against the path relative to
-    the input directory, as when the directory is walked.
-
-    Returns
-    -------
-        A list with the tuple (path, ext), or an empty list when the file is
-        not a source
-
-    """
-    try:
-        relative_path = PurePath(os.path.relpath(path.absolute(), input_dir))
-    except ValueError:
-        # On Windows a file on another drive has no relative path
-        relative_path = PurePath(path.name)
-
-    ext = source_extension(source, relative_path.as_posix(), path)
-
-    return [] if ext is None else [(path, ext)]
