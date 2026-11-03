@@ -229,6 +229,7 @@ def validate_source(source):
                 errors.append(
                     f"source '{entry}' is not supported, "
                     f"supported are: {', '.join(sorted(sources))}"
+                    + (f", or use 'type: {entry}'" if entry in types else "")
                 )
         elif isinstance(entry, dict):
             errors.extend(validate_type_entry(idx, entry))
@@ -241,7 +242,7 @@ def validate_source(source):
     listed = [
         entry["type"]
         for entry in source
-        if isinstance(entry, dict) and entry.get("type") in types
+        if isinstance(entry, dict) and is_type(entry.get("type"))
     ]
     errors.extend(
         f"source type '{name}' is listed more than once"
@@ -277,7 +278,7 @@ def validate_type_entry(idx, entry):
     name = entry.get("type")
     if name is None:
         return errors + [f"source entry [{idx}] must have a type"]
-    if name not in types:
+    if not is_type(name):
         return errors + [
             f"source type '{name}' is not supported, "
             f"supported are: {', '.join(sorted(types))}"
@@ -295,13 +296,18 @@ def validate_type_entry(idx, entry):
     return errors
 
 
+def is_type(name):
+    """Whether a value of the type option names a supported file type"""
+    return isinstance(name, str) and name in types
+
+
 def source_extensions(source):
     """The supported extensions selected by the source option"""
     extensions = []
     for entry in source:
         if isinstance(entry, str) and entry in sources:
             extensions.append(entry)
-        elif isinstance(entry, dict) and entry.get("type") in types:
+        elif isinstance(entry, dict) and is_type(entry.get("type")):
             extensions.extend(types[entry["type"]]["extensions"])
 
     # An extension may be listed and belong to a listed type as well

@@ -287,3 +287,23 @@ def test_markup_type_checks_for_double_dash(tmp_path, caplog):
         "which is not allowed in html, htm, vue, svelte comments",
         caplog,
     )
+
+
+def test_source_type_must_be_a_name(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - type: [java]\n" + VALID_LEGAL,
+        "source type '['java']' is not supported",
+        caplog,
+    )
+
+
+def test_source_type_as_plain_value_gets_a_hint(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - python\n" + VALID_LEGAL,
+        "source 'python' is not supported, supported are: cjs, cs, css, htm, html, "
+        "java, js, jsx, less, mjs, py, sass, scss, sql, svelte, ts, tsx, vue, "
+        "or use 'type: python'",
+        caplog,
+    )
