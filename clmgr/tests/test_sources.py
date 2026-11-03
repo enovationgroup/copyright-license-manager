@@ -5,7 +5,7 @@ import yaml
 
 from clmgr.main import main
 from clmgr.paths import comment_extension, interpreter
-from clmgr.template import sources, types
+from clmgr.template import comments, sources, types
 
 LEGAL = [
     {
@@ -277,3 +277,23 @@ def test_plain_extension_takes_precedence_over_an_include_pattern(tmp_path):
 
     assert files["bin/tool.py"].startswith(HASH)
     assert files["bin/query"].startswith(b"/*\n")
+
+
+@pytest.mark.parametrize("name", list(types))
+def test_extensions_of_a_type_share_a_comment_style(name):
+    """Apart from the lines that stay on top, such as a doctype in html"""
+    first, *others = types[name]["extensions"]
+
+    for ext in others:
+        assert {**comments[ext], "prologue": []} == {**comments[first], "prologue": []}
+
+
+def test_included_file_keeps_its_own_extension_in_the_type(tmp_path):
+    """A vue component has no doctype that stays on top, as html has"""
+    _, files = run_tree(
+        tmp_path,
+        [{"type": "markup", "include": ["components/*"]}],
+        {"components/a.vue": b"<!DOCTYPE html>\n<p></p>\n"},
+    )
+
+    assert files["components/a.vue"].startswith(MARKUP)

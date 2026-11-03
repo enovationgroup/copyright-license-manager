@@ -234,6 +234,16 @@ def type_entries(source):
     ]
 
 
+def type_extension(entry, ext):
+    """The extension whose comment style a file of a type gets
+
+    A file keeps its own extension when it belongs to the type, as the
+    extensions of a type may differ in the lines that stay on top. Any other
+    file gets the first extension of the type.
+    """
+    return ext if ext in entry["extensions"] else entry["extensions"][0]
+
+
 def comment_extension(source, path, file):
     """The extension whose comment style a file gets, by the source option
 
@@ -278,7 +288,7 @@ def comment_extension(source, path, file):
     if included:
         name = interpreter(file)
         if name is not None:
-            return shebang_extension(entries, included, path, name)
+            return shebang_extension(entries, included, path, ext, name)
         if len(included) > 1:
             names = " and ".join(entry["type"] for entry in included)
             raise SourceError(
@@ -287,7 +297,7 @@ def comment_extension(source, path, file):
                     "give it an extension or include it in one type only"
                 ]
             )
-        return included[0]["extensions"][0]
+        return type_extension(included[0], ext)
 
     for entry in entries:
         if ext in entry["extensions"]:
@@ -296,7 +306,7 @@ def comment_extension(source, path, file):
     return None
 
 
-def shebang_extension(entries, included, path, name):
+def shebang_extension(entries, included, path, ext, name):
     """The extension whose comment style a file with a shebang gets
 
     Parameters
@@ -307,12 +317,14 @@ def shebang_extension(entries, included, path, name):
         The entries whose include patterns select the file
     path
         Path of the file, relative to the input directory, for reporting
+    ext
+        Extension of the file
     name
         The interpreter the shebang names
 
     Returns
     -------
-        The first extension of the listed type the interpreter belongs to,
+        The extension for the listed type the interpreter belongs to,
         preferring the types that include the file, or None when it belongs
         to none of them
 
@@ -328,7 +340,7 @@ def shebang_extension(entries, included, path, name):
     # An interpreter may run several types, the include pattern decides
     preferred = [entry for entry in named if entry in included]
 
-    return (preferred or named)[0]["extensions"][0]
+    return type_extension((preferred or named)[0], ext)
 
 
 def select_sources(input_dir, source, include, exclude):

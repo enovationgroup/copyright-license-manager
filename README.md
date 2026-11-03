@@ -225,8 +225,9 @@ The supported types and extensions, and the comment style of their header:
 | `markup`     | `html`, `htm`, `vue`, `svelte` | `<!-- ... -->`, with `===` around the license |
 
 - Extensions match regardless of case, so `Main.JAVA` is a Java file.
-- `include` adds files to a type, they get the header of the first extension of
-  the type. `exclude` takes files out of that type only. The patterns work like
+- `include` adds files to a type. A file with an extension of the type gets the
+  header for its own extension, any other file the header for the first
+  extension of the type. `exclude` takes files out of that type only. The patterns work like
   the top-level `include` and `exclude`, which keep applying to every file.
 - An extension listed as a plain value claims every file with that extension,
   also in a folder that a type includes. An `include` pattern takes precedence
