@@ -363,3 +363,32 @@ def test_single_file_in_an_input_directory_given_by_a_link(tmp_path):
     assert main(args + ["--file", str(project / "bin/tool")]) == 0
 
     assert (project / "bin/tool").read_bytes().startswith(HASH)
+
+
+def test_single_file_is_checked_for_a_shebang(tmp_path):
+    code, files = run_tree(
+        tmp_path,
+        [{"type": "python", **BIN}, {"type": "javascript", **BIN}],
+        {"bin/a": b"#!/usr/bin/env node\na();\n"},
+        "--file",
+        str(tmp_path / "project/bin/a"),
+    )
+
+    assert code == 0
+    assert files["bin/a"].startswith(b"#!/usr/bin/env node\n" + BANNER)
+
+
+def test_single_file_included_by_two_types_is_an_error(tmp_path, caplog):
+    source = [{"type": "python", **BIN}, {"type": "sql", **BIN}]
+
+    with pytest.raises(SystemExit) as excinfo:
+        run_tree(
+            tmp_path,
+            source,
+            {"bin/a": b"a\n"},
+            "--file",
+            str(tmp_path / "project/bin/a"),
+        )
+
+    assert excinfo.value.code == 2
+    assert "bin/a is included by the types python and sql" in caplog.text

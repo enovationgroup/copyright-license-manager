@@ -307,3 +307,13 @@ def test_source_type_as_plain_value_gets_a_hint(tmp_path, caplog):
         "or use 'type: python'",
         caplog,
     )
+
+
+def test_markup_extension_and_type_are_reported_once(tmp_path, caplog):
+    assert_rejected(
+        tmp_path,
+        "source:\n  - html\n  - type: markup\nformat: 'Copyright -- {name}'\n"
+        + VALID_LEGAL,
+        "which is not allowed in html, htm, vue, svelte comments",
+        caplog,
+    )
