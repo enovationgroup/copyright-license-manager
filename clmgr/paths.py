@@ -182,7 +182,12 @@ def extension(path):
     return PurePath(path).suffix.lower()[1:]
 
 
-def interpreter(file):
+# The number of bytes read from the start of a file that an include pattern
+# selects, to recognise a binary file and to read the shebang
+START_SIZE = 8000
+
+
+def interpreter(start):
     """The interpreter the shebang of a file names, without a version number
 
     `#!/usr/bin/perl5.36`, `#!/usr/bin/env perl` and `#!/usr/bin/env -S perl -w`
@@ -190,8 +195,8 @@ def interpreter(file):
 
     Parameters
     ----------
-    file
-        Path of the file
+    start
+        The first bytes of the file
 
     Returns
     -------
@@ -199,8 +204,7 @@ def interpreter(file):
         none, or None when the file does not start with a shebang
 
     """
-    with open(file, mode="rb") as src:
-        first_line = src.readline(1024)
+    first_line = start.split(b"\n", 1)[0]
     if not first_line.startswith(b"#!"):
         return None
 
@@ -268,7 +272,7 @@ def comment_extension(source, path, file):
     path
         Path of the file, relative to the input directory
     file
-        Path of the file, to read its shebang
+        Path of the file, to read its start
 
     Returns
     -------
@@ -292,7 +296,14 @@ def comment_extension(source, path, file):
 
     included = [entry for entry in entries if matches(entry["include"], path)]
     if included:
-        name = interpreter(file)
+        with open(file, mode="rb") as src:
+            start = src.read(START_SIZE)
+        # A NUL byte near the start makes it a binary file, as git decides
+        if b"\0" in start:
+            log.debug(f"Skipping {path}, it is a binary file")
+            return None
+
+        name = interpreter(start)
         if name is not None:
             return shebang_extension(entries, included, path, ext, name)
         if len(included) > 1:

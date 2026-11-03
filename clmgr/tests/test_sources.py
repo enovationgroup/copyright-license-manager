@@ -190,17 +190,14 @@ def test_every_extension_belongs_to_one_type():
         (b"#!/usr/bin/env -S perl -w\n", "perl"),
         (b"#! /usr/bin/python3.11\r\n", "python"),
         (b"#!/usr/bin/env PYTHONPATH=lib python3\n", "python"),
-        (b"#!/usr/bin/env node", "node"),
+        (b"#!/usr/bin/env node\n", "node"),
         (b"#!\n", ""),
         (b"print(1)\n", None),
-        (b"", None),
+        (b"\n", None),
     ],
 )
-def test_interpreter_of_a_shebang(tmp_path, first_line, name):
-    script = tmp_path / "script"
-    script.write_bytes(first_line)
-
-    assert interpreter(script) == name
+def test_interpreter_of_a_shebang(first_line, name):
+    assert interpreter(first_line + b"rest\n") == name
 
 
 BIN = {"include": ["bin/*"], "exclude": ["bin/*.*"]}
@@ -328,3 +325,17 @@ def test_single_file_that_does_not_exist_is_skipped(tmp_path, caplog):
 
     assert code == 0
     assert "missing.py, it is not a file" in caplog.text
+
+
+def test_binary_file_that_a_type_includes_is_skipped(tmp_path):
+    blob = b"\x00\x01\x02ASCII\x00"
+
+    code, files = run_tree(
+        tmp_path,
+        [{"type": "python", **BIN}, {"type": "sql", **BIN}],
+        {"bin/blob": blob, "bin/tool": b"#!/usr/bin/python\nprint(1)\n"},
+    )
+
+    assert code == 0
+    assert files["bin/blob"] == blob
+    assert files["bin/tool"].startswith(b"#!/usr/bin/python\n" + HASH)
