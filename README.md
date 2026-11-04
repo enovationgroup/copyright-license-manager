@@ -13,6 +13,8 @@ A cli tool for easy management of copyright and licenses in source code headers.
 
 ## Installation
 
+clmgr needs Python 3.11 or newer.
+
 ```shell
 pip install clmgr
 ```
