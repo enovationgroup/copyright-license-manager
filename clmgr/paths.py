@@ -419,12 +419,14 @@ def select_sources(input_dir, source, include, exclude):
     return selected
 
 
-def select_file(input_dir, path, source):
+def select_file(input_dir, path, source, include, exclude):
     """Select a single file given with -i/--file, by the source option
 
-    The include patterns of a type are matched against the path relative to
-    the input directory, as when the directory is walked. Symbolic links are
-    resolved first, so a file given by its real path is found in an input
+    The file goes through the same selection as the files of a directory
+    walk: the top-level include and exclude patterns, the directories that
+    never hold source files, and the patterns of a type. Every pattern is
+    matched against the path relative to the input directory. Symbolic links
+    are resolved first, so a file given by its real path is found in an input
     directory given by a link, and the other way around.
 
     Parameters
@@ -435,6 +437,10 @@ def select_file(input_dir, path, source):
         Path of the file
     source
         The validated source option
+    include
+        Glob patterns a file must match, an empty list includes everything
+    exclude
+        Glob patterns a file must not match
 
     Returns
     -------
@@ -459,9 +465,50 @@ def select_file(input_dir, path, source):
         # On Windows a file on another drive has no relative path
         relative_path = PurePath(path.name)
 
-    ext = comment_extension(source, relative_path.as_posix(), path)
+    relative_path = relative_path.as_posix()
+    if not selected_by_patterns(relative_path, include, exclude):
+        return []
+
+    ext = comment_extension(source, relative_path, path)
 
     return [] if ext is None else [(path, ext)]
+
+
+def selected_by_patterns(path, include, exclude):
+    """Whether the options of the configuration select a file
+
+    The walk leaves the same files out, silently, because it has no file to
+    report. A file given with -i/--file was asked for by name, so the reason
+    it is not processed is logged.
+
+    Parameters
+    ----------
+    path
+        Path of the file, relative to the input directory
+    include
+        Glob patterns a file must match, an empty list includes everything
+    exclude
+        Glob patterns a file must not match
+
+    Returns
+    -------
+        True when the file is processed
+
+    """
+    for part in PurePath(path).parts[:-1]:
+        if part in SKIPPED_DIRECTORIES:
+            log.info(f"Skipping {path}, it is in {part}")
+            return False
+
+    if include and not matches(include, path):
+        log.info(f"Skipping {path}, the include patterns do not select it")
+        return False
+
+    if matches(exclude, path):
+        log.info(f"Skipping {path}, an exclude pattern takes it out")
+        return False
+
+    return True
 
 
 def relative(relative_root, name):

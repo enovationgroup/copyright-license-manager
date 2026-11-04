@@ -254,7 +254,10 @@ The supported types and extensions, and the comment style of their header:
   a configuration error: give it an extension, or include it in one type only.
 - A binary file that an `include` pattern selects, recognised by a NUL byte
   near its start as git does, is skipped.
-- A file given with `-i/--file` is selected by the same rules.
+- A file given with `-i/--file` is selected by the same rules, the
+  top-level `include` and `exclude` included. Naming a file the
+  configuration leaves out does not process it; clmgr reports which
+  option left it out.
 - clmgr reports a configuration error for an unknown type, a type that is
   listed more than once, an entry without a type or with an unknown option,
   and `include` or `exclude` that is not a list of patterns.

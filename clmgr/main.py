@@ -50,7 +50,13 @@ def main(args=None):
 
     try:
         if args.file is not None:
-            file_list = select_file(input_dir, Path(args.file), cfg["source"])
+            file_list = select_file(
+                input_dir,
+                Path(args.file),
+                cfg["source"],
+                cfg["include"],
+                cfg["exclude"],
+            )
         else:
             file_list = select_sources(
                 input_dir, cfg["source"], cfg["include"], cfg["exclude"]

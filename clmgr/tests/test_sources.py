@@ -174,6 +174,51 @@ def test_single_file_follows_the_same_rules(tmp_path):
     assert files["bin/other"] == b"print(2)\n"
 
 
+def test_single_file_that_an_exclude_pattern_takes_out_is_skipped(tmp_path, caplog):
+    code, files = run_tree(
+        tmp_path,
+        ["py"],
+        {"vendor/a.py": b"print(1)\n"},
+        "--file",
+        str(tmp_path / "project/vendor/a.py"),
+        options={"exclude": ["vendor"]},
+    )
+
+    assert code == 0
+    assert files["vendor/a.py"] == b"print(1)\n"
+    assert "Skipping vendor/a.py, an exclude pattern takes it out" in caplog.text
+
+
+def test_single_file_outside_the_include_patterns_is_skipped(tmp_path, caplog):
+    code, files = run_tree(
+        tmp_path,
+        ["py"],
+        {"lib/a.py": b"print(1)\n"},
+        "--file",
+        str(tmp_path / "project/lib/a.py"),
+        options={"include": ["src/**/*"]},
+    )
+
+    assert code == 0
+    assert files["lib/a.py"] == b"print(1)\n"
+    assert "Skipping lib/a.py, the include patterns do not select it" in caplog.text
+
+
+def test_single_file_in_an_installed_package_is_skipped(tmp_path, caplog):
+    code, files = run_tree(
+        tmp_path,
+        ["js"],
+        {"node_modules/lodash/lodash.js": b"a();\n"},
+        "--file",
+        str(tmp_path / "project/node_modules/lodash/lodash.js"),
+        options={"include": ["**/*"]},
+    )
+
+    assert code == 0
+    assert files["node_modules/lodash/lodash.js"] == b"a();\n"
+    assert "lodash.js, it is in node_modules" in caplog.text
+
+
 def test_every_extension_belongs_to_one_type():
     extensions = [
         ext for file_type in types.values() for ext in file_type["extensions"]
