@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm AS install
+FROM python:3.14-slim-bookworm AS install
 
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -43,7 +43,7 @@ RUN GH_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest \
 # Check install
 RUN gh --version
 
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS runtime
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
