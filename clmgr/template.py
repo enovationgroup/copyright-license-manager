@@ -182,6 +182,43 @@ licenses = {"default": "All rights reserved."}
 # Source extensions clmgr can process
 sources = list(comments)
 
+
+def file_type(extensions, interpreters=()):
+    """Create the definition of a file type
+
+    Parameters
+    ----------
+    extensions
+        The extensions of the files of the type, which share a comment style.
+        A file that belongs to the type through an include pattern of the
+        configuration gets the comment style of the first one.
+    interpreters
+        The interpreters that run the scripts of the type, without a version
+        number. A file included by a pattern is checked against its shebang.
+
+    Returns
+    -------
+        The definition of the file type
+
+    """
+    return {"extensions": list(extensions), "interpreters": list(interpreters)}
+
+
+# File types that can be selected in the source option
+types = {
+    "java": file_type(["java"]),
+    "csharp": file_type(["cs"]),
+    "python": file_type(["py"], ["python"]),
+    "sql": file_type(["sql"]),
+    "typescript": file_type(["ts", "tsx"], ["ts-node", "tsx", "bun", "deno"]),
+    "javascript": file_type(
+        ["js", "mjs", "cjs", "jsx"], ["node", "nodejs", "bun", "deno"]
+    ),
+    "stylesheet": file_type(["css", "scss", "less"]),
+    "sass": file_type(["sass"]),
+    "markup": file_type(["html", "htm", "vue", "svelte"]),
+}
+
 # Placeholders a copyright format may use
 placeholders = ["inception", "year", "name", "locality", "country"]
 

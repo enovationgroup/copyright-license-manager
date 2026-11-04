@@ -30,6 +30,8 @@ Current supported languages
 - Stylesheets (`css`, `scss`, `sass`, `less`)
 - Markup (`html`, `htm`, `vue`, `svelte`)
 
+Files are selected by their extension or as a file type, see [source](#source).
+
 ## Usage
 
 Basic usage:
@@ -172,6 +174,7 @@ source:
   - java
   - cs
   - ts
+  - type: javascript
 include:
   - "src/**/*"
 exclude:
@@ -196,22 +199,73 @@ cannot be used.
 
 ##### source
 
-A list of file extensions to process. Supported values are 'py', 'java', 'cs',
-'ts', 'sql', 'js', 'mjs', 'cjs', 'jsx', 'tsx', 'css', 'scss', 'sass', 'less',
-'html', 'htm', 'vue' and 'svelte'.
+A list of the files to process. An entry is either a file extension, or a file
+type with all its extensions:
+
+```yaml
+source:
+  - java                 # files with the extension java
+  - type: javascript     # files with the extensions js, mjs, cjs and jsx
+  - type: python         # files with the extension py, plus:
+    include:
+      - "bin/*"          # every file in bin,
+    exclude:
+      - "bin/*.*"        # except files with an extension
+```
+
+The supported types and extensions, and the comment style of their header:
+
+| Type         | Extensions                     | Header                                        |
+| ------------ | ------------------------------ | --------------------------------------------- |
+| `java`       | `java`                         | `/* ... */`                                   |
+| `csharp`     | `cs`                           | `/*** ... */`                                 |
+| `python`     | `py`                           | `#` line comments                             |
+| `sql`        | `sql`                          | `/* ... */`                                   |
+| `typescript` | `ts`, `tsx`                    | `/*! ... */` banner                           |
+| `javascript` | `js`, `mjs`, `cjs`, `jsx`      | `/*! ... */` banner                           |
+| `stylesheet` | `css`, `scss`, `less`          | `/*! ... */` banner                           |
+| `sass`       | `sass`                         | `//` line comments                            |
+| `markup`     | `html`, `htm`, `vue`, `svelte` | `<!-- ... -->`, with `===` around the license |
+
+- Extensions match regardless of case, so `Main.JAVA` is a Java file. Patterns
+  are case-sensitive, as in a `.gitignore` file.
+- `include` adds files to a type. A file with an extension of the type gets the
+  header for its own extension, any other file the header for the first
+  extension of the type. `exclude` takes files out of that type only. The patterns work like
+  the top-level `include` and `exclude`, which keep applying to every file.
+- An extension listed as a plain value claims every file with that extension,
+  also in a folder that a type includes. An `include` pattern takes precedence
+  over the extensions of the types. Qt translation files, for example, are XML
+  files with the extension `ts`: with `- type: typescript` and `- type: markup`
+  with `include: ["translations/*.ts"]` they get a markup header, while the
+  other `ts` files get the banner.
+- `*` also matches a dot, so `bin/*` includes `bin/README.md` and `bin/tool.py`
+  as well. To include only the files without an extension, add `bin/*.*` to the
+  `exclude` of the type.
+- A file that an `include` pattern selects is checked against its shebang.
+  When that names the interpreter of a listed type, the file gets that type:
+  with `bin/*` included in two types, `#!/usr/bin/env python3` makes a script
+  Python and `#!/usr/bin/env node` makes it JavaScript. Any other interpreter,
+  such as `#!/bin/bash`, leaves the file out; `--debug` says why. Python is run
+  by `python`, JavaScript by `node`, `nodejs`, `bun` or `deno`, and TypeScript
+  by `ts-node`, `tsx`, `bun` or `deno`, with or without a version number. Files
+  selected by their extension are not checked.
+- A file without a shebang that the `include` patterns of two types select is
+  a configuration error: give it an extension, or include it in one type only.
+- A binary file that an `include` pattern selects, recognised by a NUL byte
+  near its start as git does, is skipped.
+- A file given with `-i/--file` is selected by the same rules, the
+  top-level `include` and `exclude` included. Naming a file the
+  configuration leaves out does not process it; clmgr reports which
+  option left it out.
+- clmgr reports a configuration error for an unknown type, a type that is
+  listed more than once, an entry without a type or with an unknown option,
+  and `include` or `exclude` that is not a list of patterns.
 
 JSON has no comments, so a copyright header cannot be added to it. Minified
 files are usually generated and are best left out with an `exclude` pattern
-such as `**/*.min.*`.
-
-The comment style of the header depends on the file type:
-
-| Extensions                             | Header                                            |
-| -------------------------------------- | ------------------------------------------------- |
-| `ts`, `js`, `mjs`, `cjs`, `jsx`, `tsx` | `/*! ... */` banner                               |
-| `css`, `scss`, `less`                  | `/*! ... */` banner                               |
-| `sass`                                 | `//` line comments                                |
-| `html`, `htm`, `vue`, `svelte`         | `<!-- ... -->`, with `===` around the license     |
+such as `**/*.min.*`. A file that is not UTF-8 encoded is skipped with a
+warning.
 
 Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
 keep `/*!` comments by default, but a build tool may still move them to a

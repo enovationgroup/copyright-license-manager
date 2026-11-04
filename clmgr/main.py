@@ -15,7 +15,7 @@ from clmgr.args import (
 )
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
-from clmgr.paths import select_files
+from clmgr.paths import SourceError, select_file, select_sources
 from clmgr.processor import analyze, read_file
 
 log = setup_custom_logger("root")
@@ -48,25 +48,38 @@ def main(args=None):
     # however please note that the configuration must always be provided either present from
     # the current working directory or through the flag -c, --config
 
-    for ext in cfg["source"]:
+    try:
         if args.file is not None:
-            file_list = []
-            path = Path(args.file)
-            if path.suffix.lower()[1:] == ext:
-                file_list.append(path)
+            file_list = select_file(
+                input_dir,
+                Path(args.file),
+                cfg["source"],
+                cfg["include"],
+                cfg["exclude"],
+            )
         else:
-            file_list = select_files(input_dir, ext, cfg["include"], cfg["exclude"])
+            file_list = select_sources(
+                input_dir, cfg["source"], cfg["include"], cfg["exclude"]
+            )
+    except SourceError as error:
+        for message in error.messages:
+            log.error(message)
+        sys.exit(2)
 
-        for file in file_list:
-            log.debug(f"Processing file: {file}")
+    for file, ext in file_list:
+        log.debug(f"Processing file: {file}")
 
-            # Read source, preserving its byte order mark and line endings
+        # Read source, preserving its byte order mark and line endings
+        try:
             lines = read_file(file.absolute())
+        except UnicodeDecodeError:
+            log.warning(f"Skipping {file}, it is not UTF-8 encoded")
+            continue
 
-            # Determine what would happen to this file and let the
-            # handler either apply or report it
-            action, new_lines = analyze(cfg, ext, lines, file, args)
-            handler.handle(action, file, lines, new_lines)
+        # Determine what would happen to this file and let the
+        # handler either apply or report it
+        action, new_lines = analyze(cfg, ext, lines, file, args)
+        handler.handle(action, file, lines, new_lines)
 
     handler.summarize()
 

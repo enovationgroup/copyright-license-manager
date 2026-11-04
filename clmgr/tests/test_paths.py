@@ -1,6 +1,6 @@
 import os
 
-from clmgr.paths import matches, select_files
+from clmgr.paths import matches, select_sources
 
 
 def test_a_pattern_matches_the_relative_path():
@@ -81,12 +81,12 @@ def build_tree(tmp_path):
 
 
 def relative_names(tmp_path, selected):
-    return sorted(path.relative_to(tmp_path).as_posix() for path in selected)
+    return sorted(path.relative_to(tmp_path).as_posix() for path, _ in selected)
 
 
-def test_select_files_filters_on_extension(tmp_path):
+def test_select_sources_filters_on_extension(tmp_path):
     build_tree(tmp_path)
-    selected = select_files(tmp_path, "py", [], [])
+    selected = select_sources(tmp_path, ["py"], [], [])
 
     assert relative_names(tmp_path, selected) == [
         "build/d.py",
@@ -96,23 +96,23 @@ def test_select_files_filters_on_extension(tmp_path):
     ]
 
 
-def test_select_files_applies_include(tmp_path):
+def test_select_sources_applies_include(tmp_path):
     build_tree(tmp_path)
-    selected = select_files(tmp_path, "py", ["src/**/*"], [])
+    selected = select_sources(tmp_path, ["py"], ["src/**/*"], [])
 
     assert relative_names(tmp_path, selected) == ["src/a.py", "src/deep/b.py"]
 
 
-def test_select_files_applies_exclude(tmp_path):
+def test_select_sources_applies_exclude(tmp_path):
     build_tree(tmp_path)
-    selected = select_files(tmp_path, "py", [], ["build"])
+    selected = select_sources(tmp_path, ["py"], [], ["build"])
 
     assert "build/d.py" not in relative_names(tmp_path, selected)
 
 
-def test_select_files_does_not_descend_into_an_excluded_directory(tmp_path):
+def test_select_sources_does_not_descend_into_an_excluded_directory(tmp_path):
     build_tree(tmp_path)
-    selected = select_files(tmp_path, "py", [], ["src/deep"])
+    selected = select_sources(tmp_path, ["py"], [], ["src/deep"])
 
     assert relative_names(tmp_path, selected) == [
         "build/d.py",
@@ -121,7 +121,7 @@ def test_select_files_does_not_descend_into_an_excluded_directory(tmp_path):
     ]
 
 
-def test_select_files_applies_an_anchored_exclude(tmp_path):
+def test_select_sources_applies_an_anchored_exclude(tmp_path):
     for path in [
         "api/src/main/java/io/othercompany/package/MyBorrowedClass.java",
         "api/src/main/java/io/ours/Ours.java",
@@ -130,33 +130,33 @@ def test_select_files_applies_an_anchored_exclude(tmp_path):
         os.makedirs(target.parent, exist_ok=True)
         target.write_text("class A {}\n", encoding="utf-8")
 
-    selected = select_files(tmp_path, "java", [], ["/**/MyBorrowedClass.java"])
+    selected = select_sources(tmp_path, ["java"], [], ["/**/MyBorrowedClass.java"])
 
     assert relative_names(tmp_path, selected) == ["api/src/main/java/io/ours/Ours.java"]
 
 
-def test_select_files_does_not_descend_into_an_anchored_directory(tmp_path):
+def test_select_sources_does_not_descend_into_an_anchored_directory(tmp_path):
     build_tree(tmp_path)
     os.makedirs(tmp_path / "src/build")
     (tmp_path / "src/build/e.py").write_text("x\n", encoding="utf-8")
 
-    selected = select_files(tmp_path, "py", [], ["/build"])
+    selected = select_sources(tmp_path, ["py"], [], ["/build"])
 
     assert "build/d.py" not in relative_names(tmp_path, selected)
     assert "src/build/e.py" in relative_names(tmp_path, selected)
 
 
-def test_select_files_applies_an_anchored_include(tmp_path):
+def test_select_sources_applies_an_anchored_include(tmp_path):
     build_tree(tmp_path)
     os.makedirs(tmp_path / "other/src")
     (tmp_path / "other/src/e.py").write_text("x\n", encoding="utf-8")
 
-    selected = select_files(tmp_path, "py", ["/src"], [])
+    selected = select_sources(tmp_path, ["py"], ["/src"], [])
 
     assert relative_names(tmp_path, selected) == ["src/a.py", "src/deep/b.py"]
 
 
-def test_select_files_skips_installed_packages(tmp_path):
+def test_select_sources_skips_installed_packages(tmp_path):
     for path in [
         "src/app.js",
         "node_modules/lodash/lodash.js",
@@ -166,6 +166,15 @@ def test_select_files_skips_installed_packages(tmp_path):
         os.makedirs(target.parent, exist_ok=True)
         target.write_text("foo();\n", encoding="utf-8")
 
-    selected = select_files(tmp_path, "js", ["**/*"], [])
+    selected = select_sources(tmp_path, ["js"], ["**/*"], [])
 
     assert relative_names(tmp_path, selected) == ["src/app.js"]
+
+
+def test_select_sources_matches_extensions_regardless_of_case(tmp_path):
+    for name in ["Main.JAVA", "Other.Java", "notes.txt"]:
+        (tmp_path / name).write_text("class A {}\n", encoding="utf-8")
+
+    selected = select_sources(tmp_path, ["java"], [], [])
+
+    assert relative_names(tmp_path, selected) == ["Main.JAVA", "Other.Java"]
