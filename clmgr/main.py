@@ -16,7 +16,7 @@ from clmgr.args import (
 from clmgr.handler import create_handler
 from clmgr.log import setup_custom_logger
 from clmgr.paths import SourceError, select_file, select_sources
-from clmgr.processor import analyze
+from clmgr.processor import analyze, read_file
 
 log = setup_custom_logger("root")
 
@@ -63,10 +63,9 @@ def main(args=None):
     for file, ext in file_list:
         log.debug(f"Processing file: {file}")
 
-        # Read source and close it
+        # Read source, preserving its byte order mark and line endings
         try:
-            with open(file=file.absolute(), encoding="utf-8", mode="r") as src:
-                lines = src.readlines()
+            lines = read_file(file.absolute())
         except UnicodeDecodeError:
             log.warning(f"Skipping {file}, it is not UTF-8 encoded")
             continue
