@@ -48,6 +48,24 @@ class ChangeHandler(ABC):
         """
 
     @abstractmethod
+    def skip(self, path):
+        """Count a source file that could not be read
+
+        The file was selected, so it is a source, but nothing could be
+        determined about it. A --check run therefore cannot be green.
+
+        Parameters
+        ----------
+        path
+            Path of the source file
+
+        Returns
+        -------
+            None
+
+        """
+
+    @abstractmethod
     def summarize(self):
         """Print the totals for this run
 
@@ -81,6 +99,7 @@ class CountingHandler(ChangeHandler):
         self.added = 0
         self.updated = 0
         self.up_to_date = 0
+        self.skipped = 0
 
     def handle(self, action, path, lines, new_lines):
         if action == "add":
@@ -96,10 +115,17 @@ class CountingHandler(ChangeHandler):
     def process(self, action, path, lines, new_lines):
         """Process a single source file"""
 
+    def skip(self, path):
+        self.skipped += 1
+
     def summarize(self):
         report(f"{count_of_files(self.added)}: Copyright {self.added_summary}")
         report(f"{count_of_files(self.updated)}: Copyright {self.updated_summary}")
         report(f"{count_of_files(self.up_to_date)}: Copyright up to date")
+        # Only when there are any, so a run that reads every file it selects
+        # reports the same three lines it always did
+        if self.skipped:
+            report(f"{count_of_files(self.skipped)}: Skipped, could not be read")
 
     def exit_code(self):
         return 0
@@ -138,6 +164,9 @@ class ChangeHandlerDecorator(ChangeHandler):
     def handle(self, action, path, lines, new_lines):
         self.handler.handle(action, path, lines, new_lines)
 
+    def skip(self, path):
+        self.handler.skip(path)
+
     def summarize(self):
         self.handler.summarize()
 
@@ -160,11 +189,16 @@ class DiffHandler(ChangeHandlerDecorator):
 
 
 class CheckHandler(ChangeHandlerDecorator):
-    """Fails the run when a source file is not up to date"""
+    """Fails the run when a source file is not up to date or was not read
+
+    A file that could not be read was not verified, so reporting the run as
+    green would say more than it checked.
+    """
 
     def __init__(self, handler):
         super().__init__(handler)
         self.changed = 0
+        self.skipped = 0
 
     def handle(self, action, path, lines, new_lines):
         super().handle(action, path, lines, new_lines)
@@ -172,8 +206,13 @@ class CheckHandler(ChangeHandlerDecorator):
         if action != "none":
             self.changed += 1
 
+    def skip(self, path):
+        super().skip(path)
+
+        self.skipped += 1
+
     def exit_code(self):
-        if self.changed > 0:
+        if self.changed > 0 or self.skipped > 0:
             return 1
 
         return 0

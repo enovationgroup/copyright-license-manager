@@ -8,7 +8,14 @@ import sys
 import yaml
 
 from clmgr.__version__ import get_versions
-from clmgr.template import comments, licenses, placeholders, sources, statements
+from clmgr.template import (
+    comments,
+    licenses,
+    placeholders,
+    sources,
+    statements,
+    types,
+)
 
 log = logging.getLogger("root")
 
@@ -17,6 +24,9 @@ REQUIRED_OPTIONS = ["source", "legal"]
 
 # Properties every entry of the legal option must define
 REQUIRED_LEGAL_PROPERTIES = ["inception", "name", "locality", "country"]
+
+# The options of a type entry in the source option
+TYPE_OPTIONS = ["type", "include", "exclude"]
 
 DEFAULT_FORMAT = (
     "SPDX-FileCopyrightText: Copyright (c) {inception} - {year} "
@@ -207,14 +217,101 @@ def validate_config(cfg, config_file):
 
 
 def validate_source(source):
-    """Verify that every configured source file extension is supported"""
-    supported = ", ".join(sorted(sources))
+    """Verify every entry of the source option
 
-    return [
-        f"source '{ext}' is not supported, supported are: {supported}"
-        for ext in source
-        if ext not in sources
+    An entry is either a supported file extension or a mapping that selects a
+    file type, optionally with include and exclude patterns for that type.
+    """
+    errors = []
+    for idx, entry in enumerate(source):
+        if isinstance(entry, str):
+            if entry not in sources:
+                errors.append(
+                    f"source '{entry}' is not supported, "
+                    f"supported are: {', '.join(sorted(sources))}"
+                    + (f", or use 'type: {entry}'" if entry in types else "")
+                )
+        elif isinstance(entry, dict):
+            errors.extend(validate_type_entry(idx, entry))
+        else:
+            errors.append(
+                f"source entry [{idx}] must be a file extension "
+                "or a mapping with a type"
+            )
+
+    listed = [
+        entry["type"]
+        for entry in source
+        if isinstance(entry, dict) and is_type(entry.get("type"))
     ]
+    errors.extend(
+        f"source type '{name}' is listed more than once"
+        for name in dict.fromkeys(listed)
+        if listed.count(name) > 1
+    )
+
+    return errors
+
+
+def validate_type_entry(idx, entry):
+    """Verify a source entry that selects a file type
+
+    Parameters
+    ----------
+    idx
+        Position of the entry in the source option, used for reporting
+    entry
+        The entry, a mapping
+
+    Returns
+    -------
+        The problems found
+
+    """
+    errors = [
+        f"source entry [{idx}] has unknown option '{option}', "
+        f"available are: {', '.join(TYPE_OPTIONS)}"
+        for option in entry
+        if option not in TYPE_OPTIONS
+    ]
+
+    name = entry.get("type")
+    if name is None:
+        return errors + [f"source entry [{idx}] must have a type"]
+    if not is_type(name):
+        return errors + [
+            f"source type '{name}' is not supported, "
+            f"supported are: {', '.join(sorted(types))}"
+        ]
+
+    for option in ["include", "exclude"]:
+        patterns = entry.get(option)
+        if patterns is None:
+            continue
+        if not isinstance(patterns, list) or not all(
+            isinstance(pattern, str) for pattern in patterns
+        ):
+            errors.append(f"source type '{name}': {option} must be a list of patterns")
+
+    return errors
+
+
+def is_type(name):
+    """Whether a value of the type option names a supported file type"""
+    return isinstance(name, str) and name in types
+
+
+def source_extensions(source):
+    """The supported extensions selected by the source option"""
+    extensions = []
+    for entry in source:
+        if isinstance(entry, str) and entry in sources:
+            extensions.append(entry)
+        elif isinstance(entry, dict) and is_type(entry.get("type")):
+            extensions.extend(types[entry["type"]]["extensions"])
+
+    # An extension may be listed and belong to a listed type as well
+    return list(dict.fromkeys(extensions))
 
 
 def validate_format(copyright_format):
@@ -270,7 +367,7 @@ def validate_markup(cfg, check_copyright=True):
     """
     # Unsupported sources are reported by validate_source
     markup = [
-        ext for ext in cfg["source"] if ext in sources and comments[ext]["markup"]
+        ext for ext in source_extensions(cfg["source"]) if comments[ext]["markup"]
     ]
     if not markup:
         return []
