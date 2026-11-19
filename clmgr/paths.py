@@ -187,8 +187,11 @@ def extension(path):
 # selects, to recognise a binary file and to read the shebang
 START_SIZE = 8000
 
-# Options of env that take the next word as their value
-ENV_OPTIONS_WITH_VALUE = ["-u", "-C", "-P"]
+# Options of env that take the next word as their value. The long forms that
+# take one with an "=" need no entry, they are a single word. -S and its long
+# form are not here: their value is the rest of the line, which names the
+# interpreter.
+ENV_OPTIONS_WITH_VALUE = ["-u", "--unset", "-C", "--chdir", "-P"]
 
 
 def interpreter(start):
@@ -312,8 +315,14 @@ def comment_extension(source, path, file):
 
     included = [entry for entry in entries if matches(entry["include"], path)]
     if included:
-        with open(file, mode="rb") as src:
-            start = src.read(START_SIZE)
+        try:
+            with open(file, mode="rb") as src:
+                start = src.read(START_SIZE)
+        except OSError as error:
+            # Which type the file belongs to cannot be decided without its
+            # first bytes, so it is left out, with the reason on stderr
+            log.warning(f"Skipping {path}, it cannot be read: {error.strerror}")
+            return None
         # A NUL byte near the start makes it a binary file, as git decides
         if b"\0" in start:
             log.debug(f"Skipping {path}, it is a binary file")
@@ -360,6 +369,16 @@ def shebang_extension(entries, included, path, ext, name):
         The extension for the listed type the interpreter belongs to,
         preferring the types that include the file, or None when it belongs
         to none of them
+
+    Notes
+    -----
+    An interpreter may run more than one listed type: `bun` and `deno` run
+    both typescript and javascript. The types that include the file decide,
+    and when that still leaves more than one, the first of them in the source
+    option wins. Unlike a file without a shebang, which is a configuration
+    error when two types include it, this is not reported: the types that
+    share an interpreter share a comment style as well, so the header is the
+    same whichever of them wins.
 
     """
     named = [entry for entry in entries if name in entry["interpreters"]]
@@ -479,7 +498,8 @@ def selected_by_patterns(path, include, exclude):
 
     The walk leaves the same files out, silently, because it has no file to
     report. A file given with -i/--file was asked for by name, so the reason
-    it is not processed is logged.
+    it is not processed is a warning: the run does nothing, and nothing in
+    the summary would say why.
 
     Parameters
     ----------
@@ -497,15 +517,15 @@ def selected_by_patterns(path, include, exclude):
     """
     for part in PurePath(path).parts[:-1]:
         if part in SKIPPED_DIRECTORIES:
-            log.info(f"Skipping {path}, it is in {part}")
+            log.warning(f"Skipping {path}, it is in {part}")
             return False
 
     if include and not matches(include, path):
-        log.info(f"Skipping {path}, the include patterns do not select it")
+        log.warning(f"Skipping {path}, the include patterns do not select it")
         return False
 
     if matches(exclude, path):
-        log.info(f"Skipping {path}, an exclude pattern takes it out")
+        log.warning(f"Skipping {path}, an exclude pattern takes it out")
         return False
 
     return True

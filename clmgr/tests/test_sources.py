@@ -56,6 +56,48 @@ def test_file_that_is_not_utf8_is_skipped(tmp_path, caplog):
     assert "a_latin.py, it is not UTF-8 encoded" in caplog.text
 
 
+def test_check_fails_on_a_file_that_could_not_be_read(tmp_path, capsys):
+    """A file nobody could read was not verified, so --check is not green"""
+    code, files = run_tree(
+        tmp_path,
+        ["py"],
+        {"a_latin.py": "print('caf\u00e9')\n".encode("latin-1")},
+        "--check",
+    )
+
+    assert code == 1
+    assert "1 file: Skipped, could not be read" in capsys.readouterr().err
+
+
+def test_a_run_that_reads_every_file_reports_no_skipped_files(tmp_path, capsys):
+    run_tree(tmp_path, ["py"], {"a.py": b"print(1)\n"})
+
+    assert "Skipped" not in capsys.readouterr().err
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs posix permissions")
+def test_file_an_include_pattern_selects_that_cannot_be_opened(tmp_path, caplog):
+    """Reading the start decides the type, so the file is left out"""
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "bin").mkdir()
+    blocked = project / "bin/tool"
+    blocked.write_bytes(b"#!/usr/bin/env python3\nprint(1)\n")
+    blocked.chmod(0o000)
+
+    try:
+        code, _ = run_tree(
+            tmp_path,
+            [{"type": "python", **BIN}],
+            {"a.py": b"print(1)\n"},
+        )
+    finally:
+        blocked.chmod(0o644)
+
+    assert code == 0
+    assert "bin/tool, it cannot be read" in caplog.text
+
+
 BANNER = b"/*! ****"
 MARKUP = b"<!--\n"
 HASH = b"#\n# SPDX"
@@ -187,6 +229,8 @@ def test_single_file_that_an_exclude_pattern_takes_out_is_skipped(tmp_path, capl
     assert code == 0
     assert files["vendor/a.py"] == b"print(1)\n"
     assert "Skipping vendor/a.py, an exclude pattern takes it out" in caplog.text
+    # The file was asked for by name, so the run saying nothing is not enough
+    assert [record.levelname for record in caplog.records] == ["WARNING"]
 
 
 def test_single_file_outside_the_include_patterns_is_skipped(tmp_path, caplog):
@@ -238,7 +282,11 @@ def test_every_extension_belongs_to_one_type():
         (b"#!/usr/bin/env node\n", "node"),
         (b"#!/bin/env node\n", "node"),
         (b"#!/usr/bin/env -u PYTHONPATH python3\n", "python"),
+        (b"#!/usr/bin/env --unset PYTHONPATH python3\n", "python"),
+        (b"#!/usr/bin/env --unset=PYTHONPATH python3\n", "python"),
         (b"#!/usr/bin/env -C /srv python3 -u\n", "python"),
+        (b"#!/usr/bin/env --chdir /srv python3\n", "python"),
+        (b"#!/usr/bin/env --split-string perl -w\n", "perl"),
         (b"\xef\xbb\xbf#!/usr/bin/env node\n", "node"),
         (b"#!C:\\Python39\\python.exe\r\n", "python"),
         (b"#!/usr/bin/caf\xe9\n", "caf\ufffd"),
@@ -299,6 +347,31 @@ def test_include_pattern_decides_between_types_of_an_interpreter(tmp_path):
     source = [{"type": "typescript"}, {"type": "javascript", **BIN}]
 
     assert comment_extension(source, "bin/tool", script) == "js"
+
+
+def test_the_first_listed_type_wins_for_a_shared_interpreter(tmp_path):
+    """bun runs both, and both include the file, so source order decides"""
+    script = tmp_path / "tool"
+    script.write_bytes(b"#!/usr/bin/env bun\n")
+
+    typescript_first = [{"type": "typescript", **BIN}, {"type": "javascript", **BIN}]
+    javascript_first = [{"type": "javascript", **BIN}, {"type": "typescript", **BIN}]
+
+    assert comment_extension(typescript_first, "bin/tool", script) == "ts"
+    assert comment_extension(javascript_first, "bin/tool", script) == "js"
+
+
+def test_types_that_share_an_interpreter_share_a_comment_style():
+    """Which of them wins is only unreported because it cannot be seen"""
+    for name in ["bun", "deno"]:
+        styles = [
+            comments[file_type["extensions"][0]]
+            for file_type in types.values()
+            if name in file_type["interpreters"]
+        ]
+
+        assert len(styles) > 1
+        assert all(style == styles[0] for style in styles)
 
 
 def test_files_selected_by_extension_are_not_checked_for_a_shebang(tmp_path):

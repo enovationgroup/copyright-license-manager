@@ -74,6 +74,11 @@ def main(args=None):
             lines = read_file(file.absolute())
         except UnicodeDecodeError:
             log.warning(f"Skipping {file}, it is not UTF-8 encoded")
+            handler.skip(file)
+            continue
+        except OSError as error:
+            log.warning(f"Skipping {file}, it cannot be read: {error.strerror}")
+            handler.skip(file)
             continue
 
         # Determine what would happen to this file and let the

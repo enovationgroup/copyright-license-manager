@@ -234,8 +234,10 @@ The supported types and extensions, and the comment style of their header:
   extension of the type. `exclude` takes files out of that type only. The patterns work like
   the top-level `include` and `exclude`, which keep applying to every file.
 - An extension listed as a plain value claims every file with that extension,
-  also in a folder that a type includes. An `include` pattern takes precedence
-  over the extensions of the types. Qt translation files, for example, are XML
+  also in a folder that a type includes, and also when a type excludes it: the
+  `exclude` of a type only takes a file out of that type, it cannot take out a
+  file the plain extension already claims. An `include` pattern takes
+  precedence over the extensions of the types. Qt translation files, for example, are XML
   files with the extension `ts`: with `- type: typescript` and `- type: markup`
   with `include: ["translations/*.ts"]` they get a markup header, while the
   other `ts` files get the banner.
@@ -252,20 +254,29 @@ The supported types and extensions, and the comment style of their header:
   selected by their extension are not checked.
 - A file without a shebang that the `include` patterns of two types select is
   a configuration error: give it an extension, or include it in one type only.
+- `bun` and `deno` run both TypeScript and JavaScript. When the shebang names
+  an interpreter of more than one listed type, the types that include the file
+  decide, and when that still leaves more than one, the first of them in
+  `source` wins. This is not an error, unlike the case above: these types share
+  a comment style, so the header is the same whichever of them wins.
 - A binary file that an `include` pattern selects, recognised by a NUL byte
   near its start as git does, is skipped.
-- A file given with `-i/--file` is selected by the same rules, the
-  top-level `include` and `exclude` included. Naming a file the
-  configuration leaves out does not process it; clmgr reports which
-  option left it out.
+- A file given with `-i/--file` is selected by the same rules, the top-level
+  `include` and `exclude` included. Naming a file the configuration leaves out
+  does not process it, and clmgr warns which option left it out. Up to version
+  1.2.1 a file given by name was processed whatever the top-level patterns
+  said, so a tool that passes filenames, such as a pre-commit hook, now skips
+  the files a full run skips as well.
 - clmgr reports a configuration error for an unknown type, a type that is
   listed more than once, an entry without a type or with an unknown option,
   and `include` or `exclude` that is not a list of patterns.
 
 JSON has no comments, so a copyright header cannot be added to it. Minified
 files are usually generated and are best left out with an `exclude` pattern
-such as `**/*.min.*`. A file that is not UTF-8 encoded is skipped with a
-warning.
+such as `**/*.min.*`. A source file that cannot be read, because it is not
+UTF-8 encoded or because opening it fails, is skipped with a warning and
+counted in the summary. Such a file was never verified, so `--check` fails
+on it.
 
 Minifiers such as terser, esbuild, cssnano and the compressed output of Sass
 keep `/*!` comments by default, but a build tool may still move them to a
